@@ -1,0 +1,24 @@
+## @file ShellPkg.dec
+# This Package provides all definitions for EFI and UEFI Shell
+#
+# (C) Copyright 2013-2014 Hewlett-Packard Development Company, L.P.<BR>
+# Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.<BR>
+#
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = GamePkg
+  PACKAGE_GUID                   = 211504a6-dc2d-467c-924a-6ef4a189509f
+  PACKAGE_VERSION                = 1.02
+
+[Includes]
+  Include
+
+[LibraryClasses]
+
+[Guids]
+  gHandleParsingHiiGuid           = {0xb8969637, 0x81de, 0x43af, {0xbc, 0x9a, 0x24, 0xd9, 0x89, 0x13, 0xf2, 0xf6}}

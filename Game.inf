@@ -1,0 +1,56 @@
+## @file
+#  Brief Description of UEFI Game
+#  
+#  Detailed Description of UEFI MyWizardDriver
+#
+#  Copyright for UEFI  Game
+#  
+#  License for UEFI  Game
+#  
+##
+
+[Defines]
+  INF_VERSION                    = 1.25
+  BASE_NAME                      = Game
+  FILE_GUID                      = e28af586-c434-4005-988b-08a8745cb076 #Copy and paste the GUID from http://www.guidgen.com/ here
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = UefiMain
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 IPF EBC Etc...
+#
+
+[Sources]
+  Game.c
+  Globals/GameState.h
+  Globals/Sprites.h
+  Globals/Graphics.c
+  Globals/Graphics.h
+  Actors/Player.c
+  Actors/Player.h
+  
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  ShellPkg/ShellPkg.dec
+  
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  FileHandleLib
+  UefiHiiServicesLib
+  ShellLib
+  BmpSupportLib
+  SafeIntLib
+
+[Guids]
+
+[Ppis]
+
+[Protocols]
+
+[FeaturePcd]
+
+[Pcd]
