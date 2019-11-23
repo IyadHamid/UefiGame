@@ -53,10 +53,8 @@ UefiMain (
   gST->ConOut->EnableCursor(gST->ConOut, FALSE);
   Status = LoadBMP(L"EFI\\Game\\sprites.bmp");
   if (EFI_ERROR(Status)) {
-    Print(L"Failed at Load\n");
     goto Cleanup;
   }
-
   ScaleBuffer(&SpriteSheet, &SpriteSheetWidth, &SpriteSheetHeight, 4);
   SpriteLength *= 4;
   
@@ -69,8 +67,6 @@ UefiMain (
 
   TickList[0] = TickEvent;
   //TickList[1] = gST->ConIn->WaitForKey;
-
-
 
 
 
@@ -91,6 +87,7 @@ UefiMain (
   player = AllocatePool(sizeof(player));
 
   Init(player);
+  Print(L"After init\n");
   while (IsRunning) {
     gBS->WaitForEvent(1, TickList, &eventId);
     Tick(player, (BOOLEAN)eventId);

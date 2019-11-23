@@ -104,7 +104,6 @@ ExtractBuffer(
 			Out[x + y * Width] = Buffer[(x + SourceX) + (y + SourceY) * SourceWidth];
 		}
 	}
-	FreePool(*NewBuffer);
 	*NewBuffer = Out;
 	return EFI_SUCCESS;
 }
@@ -160,12 +159,10 @@ LoadBMP (
     FullFileName = ShellFindFilePath(FileName);
     if (FullFileName == NULL) {
         Status = EFI_NOT_FOUND;
-		Print(L"Failed at Find\n");
         goto Cleanup;
     }
     Status = ShellOpenFileByName(FullFileName, &FileHandle, EFI_FILE_MODE_READ, 0);
     if (EFI_ERROR(Status)) {
-		Print(L"Failed at Open\n");
         goto Cleanup;
     }
     ShellSetFilePosition(FileHandle, 0);
@@ -178,23 +175,9 @@ LoadBMP (
 	
 	Status = TranslateBmpToGopBlt(File, Size, &SpriteSheet, &SpriteSheetSize, &SpriteSheetHeight, &SpriteSheetWidth);
 	if (EFI_ERROR(Status)) {
-		Print(L"Failed at Translate\n");
-		if (Status == RETURN_UNSUPPORTED) {
-			Print(L"Unsupported\n");
-		}
-		if (Status == RETURN_INVALID_PARAMETER) {
-			Print(L"Invalid\n");
-		}
-		if (Status == RETURN_BUFFER_TOO_SMALL) {
-			Print(L"To Small\n");
-		}
-		if (Status == RETURN_OUT_OF_RESOURCES) {
-			Print(L"Out of Resources\n");
-		}
 		goto Cleanup;
 	}
 	SpriteLength = 8;
-	Print(L"Didn't fail\n");
   Cleanup:
     if (FullFileName != NULL) {
        FreePool(FullFileName);

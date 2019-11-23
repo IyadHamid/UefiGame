@@ -59,7 +59,6 @@ Init (
     This->camera = cam;
     This->frame = 0;
     This->isLeft = 0;
-
     ExtractBuffer(SpriteSheet,
                       SpriteSheetWidth,
                       SpriteSheetHeight,
@@ -79,7 +78,6 @@ Tick (
 )
 {
     EFI_INPUT_KEY Key;
-    //if (Input) {
     if (gST->ConIn->ReadKeyStroke(gST->ConIn, &Key) != EFI_NOT_READY) { 
 
         gST->ConIn->Reset(gST->ConIn, 0);
