@@ -9,9 +9,10 @@ pushd .
 ::  |-Game (ADD THIS FOLDER)
 ::    |-Game.efi (will be copied from build)
 ::    |-sprites.bmp (will be copied from this directory)
-set output=B:\Emulated 
+set output=B:\Emulated
+
 copy "%workspace%\Build\OvmfX64\DEBUG_VS2019\FV\OVMF.fd" "%output%\bios.bin"
-copy "%~dp0\sprites.bmp" "%output%\Drive\EFI\Game\sprites.bmp"
+copy "%workspace%\GamePkg\sprites.bmp" "%output%\Drive\EFI\Game\sprites.bmp"
 copy "%workspace%\Build\GamePkg\DEBUG_VS2019\X64\Game.efi" "%output%\Drive\EFI\Game\Game.efi"
 if /i "%1" EQU "run" (
     cd %output%

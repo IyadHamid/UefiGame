@@ -23,7 +23,7 @@ EFI_STATUS
 GetScreen (
 	IN OUT EFI_GRAPHICS_OUTPUT_PROTOCOL **Screen
 )
-{
+{	//TBA Screen select
 	EFI_GRAPHICS_OUTPUT_PROTOCOL *Out;
 	UINTN HandleCount;
 	EFI_HANDLE* HandleBuffer = NULL;
@@ -46,8 +46,8 @@ GetScreen (
 EFI_STATUS
 ScaleBuffer(
 	IN OUT EFI_GRAPHICS_OUTPUT_BLT_PIXEL **Buffer,
-	IN UINTN *Width,
-	IN UINTN *Height,
+	IN OUT UINTN *Width,
+	IN OUT UINTN *Height,
 	IN UINTN Scale
 )
 {
@@ -72,6 +72,10 @@ ScaleBuffer(
 			Out[x + y * OutWidth] = In[(x / Scale) + (y / Scale) * *Width];	
 		}
 	}
+	//if (*Buffer != NULL) {
+	//	FreePool(*Buffer);
+	//}
+	FreePool(In);
 	*Buffer = Out;
 	*Width = OutWidth;
 	*Height = OutHeight;
@@ -122,7 +126,6 @@ AddToBuffer (
 )
 {
 	//EFI_STATUS Status;
-	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Out = *Buffer;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL ZeroPixel;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL Src;
 	UINTN x;
@@ -135,11 +138,10 @@ AddToBuffer (
 		for (x = 0; x < Width; x++) {
 			Src = Addend[x + y * Width];
 			if (!(Transparent && CompareMem (&Src, &ZeroPixel, 3) == 0)) {
-				Out[(x + DestinationX) + (y + DestinationY) * SourceWidth] = Src;
+				(*Buffer)[(x + DestinationX) + (y + DestinationY) * SourceWidth] = Src;
 			}
 		}
 	}
-	*Buffer = Out;
 	return EFI_SUCCESS;
 }
 
@@ -167,18 +169,26 @@ LoadBMP (
     }
     ShellSetFilePosition(FileHandle, 0);
 	EFI_FILE_INFO *FileInfo = ShellGetFileInfo(FileHandle);
-	void *File = NULL;
+	void *File = (void *) 1; //To make BmpSupportLib happy
 	UINTN Size = FileInfo->FileSize;
 
 	ShellReadFile(FileHandle, &Size, File);
-	ShellCloseFile(&FileHandle);
-	
+	if (EFI_ERROR(Status)) {
+        goto Cleanup;
+    }
+
+	SpriteSheet = 0;
+	SpriteSheetHeight = 0;
+	SpriteSheetSize = 0;
+	SpriteSheetWidth = 0;
+
 	Status = TranslateBmpToGopBlt(File, Size, &SpriteSheet, &SpriteSheetSize, &SpriteSheetHeight, &SpriteSheetWidth);
 	if (EFI_ERROR(Status)) {
 		goto Cleanup;
 	}
 	SpriteLength = 8;
   Cleanup:
+  	ShellCloseFile(&FileHandle);
     if (FullFileName != NULL) {
        FreePool(FullFileName);
     }

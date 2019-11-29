@@ -41,8 +41,10 @@ Init (
     con->left.UnicodeChar = u'a';
     con->right.ScanCode = SCAN_NULL; 
     con->right.UnicodeChar = u'd';
-    con->quit.ScanCode = SCAN_ESC; 
-    con->quit.UnicodeChar = u' ';
+    //con->quit.ScanCode = SCAN_ESC; 
+    //con->quit.UnicodeChar = u' ';
+    con->quit.ScanCode = SCAN_NULL;
+    con->quit.UnicodeChar = u'Q';
 
     Camera *cam;
     cam = AllocatePool(sizeof(Camera));
@@ -118,6 +120,7 @@ Tick (
             This->isLeft = TRUE;
         }
 
+        //FreePool(&This->sprite);
         //Get and add to level
         ExtractBuffer(SpriteSheet,
                       SpriteSheetWidth,

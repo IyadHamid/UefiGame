@@ -63,21 +63,10 @@ UefiMain (
   UINTN eventId;
 
   gBS->CreateEvent(EVT_TIMER, TPL_NOTIFY, NULL, NULL, &TickEvent);
-	gBS->SetTimer(TickEvent, TimerPeriodic, 50000 * 10);
+	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 100);
 
   TickList[0] = TickEvent;
-  //TickList[1] = gST->ConIn->WaitForKey;
 
-
-
-  EFI_GRAPHICS_OUTPUT_BLT_PIXEL a = {25, 100, 48, 0};
-  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *b;
-  b = AllocatePool(500 * 500 * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
-  for (UINTN i = 0; i < 500 * 500; i++) {
-    if (i%2 == 0)
-    b[i] = a;
-  }
-  
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
   LevelWidth = 2048;
   LevelHeight = 1024;
@@ -87,14 +76,15 @@ UefiMain (
   player = AllocatePool(sizeof(player));
 
   Init(player);
-  Print(L"After init\n");
   while (IsRunning) {
     gBS->WaitForEvent(1, TickList, &eventId);
     Tick(player, (BOOLEAN)eventId);
     ExtractBuffer(LevelBuffer, LevelWidth, LevelHeight, 0, 0, &temp, 600, 600);
     player->camera->screen->Blt(player->camera->screen, temp, EfiBltBufferToVideo, 0, 0, 0, 0, 600, 600, 0);
   }
+  
 Cleanup:
   gST->ConOut->EnableCursor(gST->ConOut, TRUE);
+  gST->ConOut->ClearScreen(gST->ConOut);
   return Status;
 }
