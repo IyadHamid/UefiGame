@@ -5,9 +5,9 @@ To build, clone [edk2](https://github.com/tianocore/edk2.git) and follow build i
 ## Issues
 |Features|Status|
 |:-----------------------|-------|
-|Possible memory leak|Finding|
-|ConIn is sketch, need to read from 0x60|None|
+|Controller needs to be redone/fixed|Working|
 |Screen protocol selector|None|
 
 ## Changelog
+Found and squashed memory leak
 Made BmpSupportLib happy and no changes in that are necessary

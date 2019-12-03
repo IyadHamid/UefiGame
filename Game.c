@@ -25,6 +25,7 @@
 #include "Sprites.h"
 
 BOOLEAN IsRunning;
+EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *LevelBuffer;
 UINTN LevelWidth;
 UINTN LevelHeight;
@@ -63,24 +64,32 @@ UefiMain (
   UINTN eventId;
 
   gBS->CreateEvent(EVT_TIMER, TPL_NOTIFY, NULL, NULL, &TickEvent);
-	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 100);
+	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 50);
 
   TickList[0] = TickEvent;
 
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
   LevelWidth = 2048;
   LevelHeight = 1024;
-  LevelBuffer = AllocatePool(LevelWidth * LevelHeight * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
+  BackgroundBuffer = AllocatePool(LevelWidth * LevelHeight * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
 
   Player *player;
   player = AllocatePool(sizeof(player));
 
   Init(player);
   while (IsRunning) {
+    //Copy Background to LevelBuffer
+    LevelBuffer = AllocateCopyPool(LevelWidth * LevelWidth, BackgroundBuffer);
+    //Wait for tick
     gBS->WaitForEvent(1, TickList, &eventId);
+
     Tick(player, (BOOLEAN)eventId);
     ExtractBuffer(LevelBuffer, LevelWidth, LevelHeight, 0, 0, &temp, 600, 600);
     player->camera->screen->Blt(player->camera->screen, temp, EfiBltBufferToVideo, 0, 0, 0, 0, 600, 600, 0);
+    
+    //Free screen and temporary
+    FreePool(temp);
+    FreePool(LevelBuffer);
   }
   
 Cleanup:

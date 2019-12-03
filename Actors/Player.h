@@ -6,17 +6,24 @@
 #include <Protocol/GraphicsOutput.h>
 #include <Pi/PiFirmwareFile.h>
 
+enum {UP, DOWN, LEFT, RIGHT, QUIT, MAX_BUTTONS};
+
+typedef struct {
+    BOOLEAN state;
+    CHAR16 unicode;
+    UINT16 scanCode;
+} Button;
+
 ///
 /// Controls with scancodes
 ///
 typedef struct {
-    EFI_INPUT_KEY up;
-    EFI_INPUT_KEY down;
-    EFI_INPUT_KEY left;
-    EFI_INPUT_KEY right;
-    EFI_INPUT_KEY quit;
+    Button buttons[MAX_BUTTONS];
 } Controller;
 
+///
+/// Camera information
+///
 typedef struct {
     UINTN x;
     UINTN y;

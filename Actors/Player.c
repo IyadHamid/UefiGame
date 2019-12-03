@@ -14,13 +14,12 @@
 
 EFI_INPUT_KEY last;
 
-BOOLEAN
-IsKeyEqual (
-    IN EFI_INPUT_KEY a,
-    IN EFI_INPUT_KEY b
-) 
+EFI_STATUS
+ClearController (
+    IN Controller *This
+)
 {
-    return (a.ScanCode == b.ScanCode) && (a.UnicodeChar == b.UnicodeChar);
+
 }
 
 EFI_STATUS
@@ -33,18 +32,16 @@ Init (
 
     Controller *con;
     con = AllocatePool(sizeof(Controller));
-    con->up.ScanCode = SCAN_NULL;
-    con->up.UnicodeChar = u'w';
-    con->down.ScanCode = SCAN_NULL;
-    con->down.UnicodeChar = u's';
-    con->left.ScanCode = SCAN_NULL; 
-    con->left.UnicodeChar = u'a';
-    con->right.ScanCode = SCAN_NULL; 
-    con->right.UnicodeChar = u'd';
-    //con->quit.ScanCode = SCAN_ESC; 
-    //con->quit.UnicodeChar = u' ';
-    con->quit.ScanCode = SCAN_NULL;
-    con->quit.UnicodeChar = u'Q';
+    con->buttons[UP].scanCode    = SCAN_NULL;
+    con->buttons[UP].unicode     = u'w';
+    con->buttons[DOWN].scanCode  = SCAN_NULL;
+    con->buttons[DOWN].unicode   = u's';
+    con->buttons[LEFT].scanCode  = SCAN_NULL; 
+    con->buttons[LEFT].unicode   = u'a';
+    con->buttons[RIGHT].scanCode = SCAN_NULL; 
+    con->buttons[RIGHT].unicode  = u'd';
+    con->buttons[QUIT].scanCode  = SCAN_NULL;
+    con->buttons[QUIT].unicode   = u'Q';
 
     Camera *cam;
     cam = AllocatePool(sizeof(Camera));
@@ -80,26 +77,43 @@ Tick (
 )
 {
     EFI_INPUT_KEY Key;
-    if (gST->ConIn->ReadKeyStroke(gST->ConIn, &Key) != EFI_NOT_READY) { 
-
-        gST->ConIn->Reset(gST->ConIn, 0);
-        if (IsKeyEqual(Key, This->controller->up)) {
-            This->velY--;
-        }
-        else if (IsKeyEqual(Key, This->controller->down)) {
-            This->velY++;
-        }
-        else if (IsKeyEqual(Key, This->controller->left)) {
-            This->velX--;
-        }
-        else if (IsKeyEqual(Key, This->controller->right)) {
-            This->velX++;
-        }
-        else if (IsKeyEqual(Key, This->controller->quit)) {
-            Print(L"Quit");
-            IsRunning = FALSE;
-        }
+    UINTN i;
+    while (gST->ConIn->ReadKeyStroke(gST->ConIn, &Key) != EFI_NOT_READY) { 
+        for (i = 0; i < MAX_BUTTONS; i++) {
+            if (This->controller->buttons[i].scanCode == Key.ScanCode) {
+                if (Key.ScanCode != 0 ||
+                    This->controller->buttons[i].unicode == Key.UnicodeChar
+                ) {
+                    This->controller->buttons[i].state = TRUE;
+                    break;
+                }
+            }
+        }    
     }
+
+    gST->ConIn->Reset(gST->ConIn, 0);
+    if (This->controller->buttons[UP].state) {
+        This->velY--;
+    }
+    else if (This->controller->buttons[DOWN].state) {
+        This->velY++;
+    }
+    else if (This->controller->buttons[LEFT].state) {
+        This->velX--;
+    }
+    else if (This->controller->buttons[RIGHT].state) {
+        This->velX++;
+    }
+    else if (This->controller->buttons[QUIT].state) {
+        Print(L"Quit");
+        IsRunning = FALSE;
+    }
+
+    for (i = 0; i < MAX_BUTTONS; i++) {
+        This->controller->buttons[i].state = FALSE;
+    }
+
+
     if (This->velX != 0 || This->velY != 0 || This->frame / FRAME_DURATION == JUMP_FRAME) {
         This->x += This->velX;
         This->y += This->velY;
@@ -120,7 +134,6 @@ Tick (
             This->isLeft = TRUE;
         }
 
-        //FreePool(&This->sprite);
         //Get and add to level
         ExtractBuffer(SpriteSheet,
                       SpriteSheetWidth,

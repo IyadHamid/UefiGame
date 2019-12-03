@@ -94,21 +94,19 @@ ExtractBuffer(
 	IN UINTN Height
 )
 {
-	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Out;
 	UINTN x;
 	UINTN y;
 	//Allocate resources
-	Out = AllocatePool(sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL) * Width * Height);
-	if (Out == NULL) {
+	*NewBuffer = AllocatePool(sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL) * Width * Height);
+	if (*NewBuffer == NULL) {
 		return EFI_OUT_OF_RESOURCES;
 	}
 
 	for (y = 0; y < Height; y++) {
 		for (x = 0; x < Width; x++) {
-			Out[x + y * Width] = Buffer[(x + SourceX) + (y + SourceY) * SourceWidth];
+			(*NewBuffer)[x + y * Width] = Buffer[(x + SourceX) + (y + SourceY) * SourceWidth];
 		}
 	}
-	*NewBuffer = Out;
 	return EFI_SUCCESS;
 }
 
@@ -125,14 +123,13 @@ AddToBuffer (
 	IN BOOLEAN Transparent
 )
 {
-	//EFI_STATUS Status;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL ZeroPixel;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL Src;
 	UINTN x;
 	UINTN y;
 
 	if (Transparent) {
-		ZeroMem (&ZeroPixel, sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
+		ZeroMem(&ZeroPixel, sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
 	}
 	for (y = 0; y < Height; y++) {
 		for (x = 0; x < Width; x++) {
@@ -167,6 +164,7 @@ LoadBMP (
     if (EFI_ERROR(Status)) {
         goto Cleanup;
     }
+
     ShellSetFilePosition(FileHandle, 0);
 	EFI_FILE_INFO *FileInfo = ShellGetFileInfo(FileHandle);
 	void *File = (void *) 1; //To make BmpSupportLib happy
@@ -192,6 +190,6 @@ LoadBMP (
     if (FullFileName != NULL) {
        FreePool(FullFileName);
     }
-	
+
 	return Status;
 }
