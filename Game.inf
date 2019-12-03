@@ -24,12 +24,9 @@
 
 [Sources]
   Game.c
-  Globals/GameState.h
-  Globals/Sprites.h
-  Globals/Graphics.c
-  Globals/Graphics.h
   Actors/Player.c
-  Actors/Player.h
+  Globals/Graphics.c
+  
   
 [Packages]
   MdePkg/MdePkg.dec

@@ -19,10 +19,10 @@
 #include <Library/BmpSupportLib.h>
 #include <IndustryStandard/Bmp.h>
 
-#include "GameState.h"
-#include "Graphics.h"
-#include "Player.h"
-#include "Sprites.h"
+#include "Actors/Player.h"
+#include "Globals/GameState.h"
+#include "Globals/Graphics.h"
+#include "Globals/Sprites.h"
 
 BOOLEAN IsRunning;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;

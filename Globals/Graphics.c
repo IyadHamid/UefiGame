@@ -10,8 +10,8 @@
 #include <IndustryStandard/Bmp.h>
 #include <Pi/PiFirmwareFile.h>
 
-#include "Graphics.h"
-#include "Sprites.h"
+#include "Globals/Graphics.h"
+#include "Globals/Sprites.h"
 
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *SpriteSheet;
 UINTN SpriteSheetSize;
@@ -51,31 +51,27 @@ ScaleBuffer(
 	IN UINTN Scale
 )
 {
-	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *In;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Out;
 	UINTN OutWidth;
 	UINTN OutHeight;
 	UINTN x;
 	UINTN y;
-	//Allocate more space
+
+	//Allocate more space/get new sizes
 	OutWidth = *Width * Scale;
 	OutHeight = *Height * Scale;
-	UINTN Size = sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL) * OutWidth * OutHeight;
-    Out = AllocatePool (Size);
+    Out = AllocatePool (sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL) * OutWidth * OutHeight);
 	if (Out == NULL) {
 		return EFI_OUT_OF_RESOURCES;
 	}
 
-	In = *Buffer;
 	for (y = 0; y < OutHeight; y++) {
 		for (x = 0; x < OutWidth; x++) {
-			Out[x + y * OutWidth] = In[(x / Scale) + (y / Scale) * *Width];	
+			Out[x + y * OutWidth] = (*Buffer)[(x / Scale) + (y / Scale) * *Width];	
 		}
 	}
-	//if (*Buffer != NULL) {
-	//	FreePool(*Buffer);
-	//}
-	FreePool(In);
+
+	FreePool(*Buffer);
 	*Buffer = Out;
 	*Width = OutWidth;
 	*Height = OutHeight;
@@ -128,13 +124,15 @@ AddToBuffer (
 	UINTN x;
 	UINTN y;
 
+	//Defined zero pixel as pure black
 	if (Transparent) {
 		ZeroMem(&ZeroPixel, sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
 	}
 	for (y = 0; y < Height; y++) {
 		for (x = 0; x < Width; x++) {
 			Src = Addend[x + y * Width];
-			if (!(Transparent && CompareMem (&Src, &ZeroPixel, 3) == 0)) {
+			//If (not in transparent mode) and (not a zero pixel), add
+			if (!(Transparent && CompareMem(&Src, &ZeroPixel, 3) == 0)) {
 				(*Buffer)[(x + DestinationX) + (y + DestinationY) * SourceWidth] = Src;
 			}
 		}

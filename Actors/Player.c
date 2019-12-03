@@ -7,10 +7,10 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
 
-#include "GameState.h"
-#include "Graphics.h"
-#include "Player.h"
-#include "Sprites.h"
+#include "Actors/Player.h"
+#include "Globals/GameState.h"
+#include "Globals/Graphics.h"
+#include "Globals/Sprites.h"
 
 EFI_INPUT_KEY last;
 
@@ -19,7 +19,15 @@ ClearController (
     IN Controller *This
 )
 {
+    if (This == NULL) {
+        return RETURN_INVALID_PARAMETER;
+    }
 
+    UINTN i;
+    for (i = 0; i < MAX_BUTTONS; i++) {
+        This->buttons[i].state = FALSE;
+    }
+    return RETURN_SUCCESS;
 }
 
 EFI_STATUS
@@ -42,6 +50,7 @@ Init (
     con->buttons[RIGHT].unicode  = u'd';
     con->buttons[QUIT].scanCode  = SCAN_NULL;
     con->buttons[QUIT].unicode   = u'Q';
+    ClearController(con);
 
     Camera *cam;
     cam = AllocatePool(sizeof(Camera));
@@ -56,17 +65,15 @@ Init (
     This->velY = 0;
     This->controller = con;
     This->camera = cam;
-    This->frame = 0;
-    This->isLeft = 0;
     ExtractBuffer(SpriteSheet,
-                      SpriteSheetWidth,
-                      SpriteSheetHeight,
-                      (This->frame / FRAME_DURATION) * SpriteLength,
-                      (UINTN)This->isLeft * SpriteLength,
-                      &This->sprite,
-                      SpriteLength,
-                      SpriteLength
-                      );
+                  SpriteSheetWidth,
+                  SpriteSheetHeight,
+                  0, //Sprite 0
+                  0, //Facing right
+                  &This->sprite,
+                  SpriteLength,
+                  SpriteLength
+                  );
     return EFI_SUCCESS;
 }
 
@@ -90,61 +97,52 @@ Tick (
             }
         }    
     }
-
-    gST->ConIn->Reset(gST->ConIn, 0);
+    
     if (This->controller->buttons[UP].state) {
-        This->velY--;
+        This->velY -= SpriteLength * LOCATION_PRECISION;
     }
     else if (This->controller->buttons[DOWN].state) {
-        This->velY++;
+        This->velY += SpriteLength * LOCATION_PRECISION;
     }
     else if (This->controller->buttons[LEFT].state) {
-        This->velX--;
+        This->velX -= SpriteLength * LOCATION_PRECISION;
     }
     else if (This->controller->buttons[RIGHT].state) {
-        This->velX++;
+        This->velX += SpriteLength * LOCATION_PRECISION;
     }
     else if (This->controller->buttons[QUIT].state) {
         Print(L"Quit");
         IsRunning = FALSE;
     }
+    ClearController(This->controller);
 
-    for (i = 0; i < MAX_BUTTONS; i++) {
-        This->controller->buttons[i].state = FALSE;
-    }
-
-
-    if (This->velX != 0 || This->velY != 0 || This->frame / FRAME_DURATION == JUMP_FRAME) {
+    //Get new sprite and location if moving
+    if (This->velX != 0 || This->velY != 0) {
         This->x += This->velX;
         This->y += This->velY;
 
-        //Which frame to choose
-        if (This->velY != 0) {
-            This->frame = JUMP_FRAME * FRAME_DURATION;
-        }
-        else {
-            This->frame = (This->frame + 1) % (JUMP_FRAME * FRAME_DURATION);
-        }
-
-        //Which direction is This traveling in
-        if (This->velX > 0) {
-            This->isLeft = FALSE;
-        }
-        else if (This->velX < 0) {
-            This->isLeft = TRUE;
-        }
-
-        //Get and add to level
+        //Get sprite
         ExtractBuffer(SpriteSheet,
                       SpriteSheetWidth,
                       SpriteSheetHeight,
-                      (This->frame / FRAME_DURATION) * SpriteLength,
-                      (UINTN)This->isLeft * SpriteLength,
+                      This->velY == 0 ? ((This->x / (LOCATION_PRECISION * 64)) % JUMP_FRAME) * SpriteLength 
+                                      : JUMP_FRAME * SpriteLength, //Get jump/midair sprite
+                      (UINTN)(This->velX < 0) * SpriteLength,
                       &This->sprite,
                       SpriteLength,
                       SpriteLength
                       );
     }
-    AddToBuffer(&LevelBuffer, LevelWidth, LevelHeight, This->sprite, This->x, This->y, SpriteLength, SpriteLength, TRUE);
+    //Add to level buffer
+    AddToBuffer(&LevelBuffer, 
+                LevelWidth, 
+                LevelHeight, 
+                This->sprite, 
+                This->x / (LOCATION_PRECISION * SpriteLength), 
+                This->y / (LOCATION_PRECISION * SpriteLength), 
+                SpriteLength, 
+                SpriteLength, 
+                TRUE
+                );
     return EFI_SUCCESS;
 }

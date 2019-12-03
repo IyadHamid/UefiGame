@@ -2,6 +2,8 @@
 #include <IndustryStandard/Bmp.h>
 #pragma once
 
+#define LOCATION_PRECISION 10
+
 extern EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;
 extern EFI_GRAPHICS_OUTPUT_BLT_PIXEL *LevelBuffer;
 extern UINTN LevelWidth;

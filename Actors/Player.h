@@ -34,19 +34,25 @@ typedef struct {
 /// Player information
 ///
 typedef struct {
+    ///
+    /// X coord, 1/10 of 1 tile
+    ///
     UINTN x;
+    ///
+    /// Y coord, 1/10 of 1 tile
+    ///
     UINTN y;
     INTN velX;
     INTN velY;
     Controller *controller;
     Camera *camera;
-    ///
-    /// Frame timer, frame/sprite * FRAME_DURATION
-    ///
-    INT8 frame;
-    BOOLEAN isLeft;
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL *sprite;
 } Player;
+
+EFI_STATUS
+ClearController (
+    IN Controller *This
+);
 
 EFI_STATUS
 Init (
