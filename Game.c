@@ -19,12 +19,15 @@
 #include <Library/BmpSupportLib.h>
 #include <IndustryStandard/Bmp.h>
 
+#include <Protocol/SimpleTextInEx.h>
+
 #include "Actors/Player.h"
 #include "Globals/GameState.h"
 #include "Globals/Graphics.h"
 #include "Globals/Sprites.h"
 
 BOOLEAN IsRunning;
+EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *Input;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *LevelBuffer;
 UINTN LevelWidth;
@@ -48,45 +51,58 @@ UefiMain (
   )
 { 
   EFI_STATUS Status = EFI_SUCCESS;
-  IsRunning = TRUE;
 
   gST->ConOut->ClearScreen(gST->ConOut);
   gST->ConOut->EnableCursor(gST->ConOut, FALSE);
-  Status = LoadBMP(L"EFI\\Game\\sprites.bmp");
+
+  //Get input
+  Input = (void *)1;
+  Status = gBS->HandleProtocol(gST->ConsoleInHandle, &gEfiSimpleTextInputExProtocolGuid, (VOID **)&Input);
+  if (EFI_ERROR(Status)) {
+  	goto Cleanup;
+  }
+
+  //Get sprites
+  Status = LoadBMP(L"EFI\\Game\\sprites.bmp", &SpriteSheet, &SpriteSheetHeight, &SpriteSheetWidth, &SpriteSheetSize);
   if (EFI_ERROR(Status)) {
     goto Cleanup;
   }
+	SpriteLength = BMP_TILE_LENGTH;
+
+  //Scale sprites up
   ScaleBuffer(&SpriteSheet, &SpriteSheetWidth, &SpriteSheetHeight, 4);
   SpriteLength *= 4;
-  
-  EFI_EVENT TickEvent;
-  EFI_EVENT TickList[1];
-  UINTN eventId;
 
-  gBS->CreateEvent(EVT_TIMER, TPL_NOTIFY, NULL, NULL, &TickEvent);
-	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 50);
-
-  TickList[0] = TickEvent;
-
-  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
+  //Initialize Background
   LevelWidth = 2048;
   LevelHeight = 1024;
   BackgroundBuffer = AllocatePool(LevelWidth * LevelHeight * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
 
+  //Initialize Player
   Player *player;
   player = AllocatePool(sizeof(player));
-
   Init(player);
+
+  //Setup tick loop
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
+  EFI_EVENT TickEvent;
+  UINTN eventId;
+
+  gBS->CreateEvent(EVT_TIMER, TPL_NOTIFY, NULL, NULL, &TickEvent);
+	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 50);
+  IsRunning = TRUE;
+
   while (IsRunning) {
     //Copy Background to LevelBuffer
     LevelBuffer = AllocateCopyPool(LevelWidth * LevelWidth, BackgroundBuffer);
     //Wait for tick
-    gBS->WaitForEvent(1, TickList, &eventId);
+    gBS->WaitForEvent(1, &TickEvent, &eventId);
 
-    Tick(player, (BOOLEAN)eventId);
+    Tick(player);
+
     ExtractBuffer(LevelBuffer, LevelWidth, LevelHeight, 0, 0, &temp, 600, 600);
     player->camera->screen->Blt(player->camera->screen, temp, EfiBltBufferToVideo, 0, 0, 0, 0, 600, 600, 0);
-    
+
     //Free screen and temporary
     FreePool(temp);
     FreePool(LevelBuffer);

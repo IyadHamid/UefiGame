@@ -40,7 +40,12 @@ ExtractBuffer(
 	IN UINTN Height
 );
 
-EFI_STATUS
-LoadBMP(
-	CHAR16 *FileName
+
+EFI_STATUS 
+LoadBMP (
+	IN CHAR16  *FileName,
+	OUT EFI_GRAPHICS_OUTPUT_BLT_PIXEL **Buffer,
+	OUT UINTN *Height,
+	OUT UINTN *Width,
+	OUT UINTN *Size
 );

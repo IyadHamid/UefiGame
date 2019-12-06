@@ -7,10 +7,11 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
 
+#include <Protocol/SimpleTextInEx.h>
+
 #include "Actors/Player.h"
 #include "Globals/GameState.h"
 #include "Globals/Graphics.h"
-#include "Globals/Sprites.h"
 
 EFI_INPUT_KEY last;
 
@@ -27,6 +28,8 @@ ClearController (
     for (i = 0; i < MAX_BUTTONS; i++) {
         This->buttons[i].state = FALSE;
     }
+
+    This->shiftState = 0;
     return RETURN_SUCCESS;
 }
 
@@ -48,8 +51,8 @@ Init (
     con->buttons[LEFT].unicode   = u'a';
     con->buttons[RIGHT].scanCode = SCAN_NULL; 
     con->buttons[RIGHT].unicode  = u'd';
-    con->buttons[QUIT].scanCode  = SCAN_NULL;
-    con->buttons[QUIT].unicode   = u'Q';
+    con->buttons[QUIT].scanCode  = SCAN_ESC;
+    con->buttons[QUIT].unicode   = 0;
     ClearController(con);
 
     Camera *cam;
@@ -79,39 +82,64 @@ Init (
 
 EFI_STATUS
 Tick (
-    IN Player *This,
-    IN BOOLEAN Input
+    IN Player *This
 )
 {
-    EFI_INPUT_KEY Key;
+    EFI_STATUS Status;
+    EFI_KEY_DATA KeyData;
     UINTN i;
-    while (gST->ConIn->ReadKeyStroke(gST->ConIn, &Key) != EFI_NOT_READY) { 
+
+    /*
+    ##### ##### #####    ##### #   # ####  #   # #####
+    #     #       #        #   ##  # #   # #   #   #  
+    #  ## ####    #        #   # # # ####  #   #   #  
+    #   # #       #        #   #  ## #     #   #   #  
+    ##### #####   #      ##### #   # #      ###    #  
+    */
+    Status = Input->ReadKeyStrokeEx(Input, &KeyData);
+    while (Status != EFI_NOT_READY && !EFI_ERROR(Status)) { 
+        This->controller->shiftState = KeyData.KeyState.KeyShiftState;
+
+        //Was shift pressed
+        if (KeyData.Key.UnicodeChar >= u'A' && KeyData.Key.UnicodeChar <= u'Z') {
+            //Make lowercase
+            KeyData.Key.UnicodeChar += 0x20; //'a'(0x61) - 'A'(0x41) = 0x20
+            This->controller->shiftState = This->controller->shiftState || EFI_LEFT_SHIFT_PRESSED;
+        }
+
         for (i = 0; i < MAX_BUTTONS; i++) {
-            if (This->controller->buttons[i].scanCode == Key.ScanCode) {
-                if (Key.ScanCode != 0 ||
-                    This->controller->buttons[i].unicode == Key.UnicodeChar
-                ) {
-                    This->controller->buttons[i].state = TRUE;
-                    break;
-                }
+            //if scancode matches and != 0, or if unicode matches
+            if ((This->controller->buttons[i].scanCode == KeyData.Key.ScanCode && KeyData.Key.ScanCode != 0)
+                ||This->controller->buttons[i].unicode == KeyData.Key.UnicodeChar
+            ) {
+                This->controller->buttons[i].state = TRUE;
             }
-        }    
+        }
+        Status = Input->ReadKeyStrokeEx(Input, &KeyData);
     }
-    
+
+    /*
+    #   #  ###  #   # ####  #     #####    ##### #   # ####  #   # #####
+    #   # #   # ##  # #   # #     #          #   ##  # #   # #   #   #  
+    ##### ##### # # # #   # #     ####       #   # # # ####  #   #   #  
+    #   # #   # #  ## #   # #     #          #   #  ## #     #   #   #  
+    #   # #   # #   # ####  ##### #####    ##### #   # #      ###    #  
+    */
+    UINTN rate = SpriteLength * LOCATION_PRECISION;
+
     if (This->controller->buttons[UP].state) {
-        This->velY -= SpriteLength * LOCATION_PRECISION;
+        This->velY -= rate;
     }
     else if (This->controller->buttons[DOWN].state) {
-        This->velY += SpriteLength * LOCATION_PRECISION;
+        This->velY += rate;
     }
     else if (This->controller->buttons[LEFT].state) {
-        This->velX -= SpriteLength * LOCATION_PRECISION;
+        This->velX -= rate;
     }
     else if (This->controller->buttons[RIGHT].state) {
-        This->velX += SpriteLength * LOCATION_PRECISION;
+        This->velX += rate;
     }
     else if (This->controller->buttons[QUIT].state) {
-        Print(L"Quit");
         IsRunning = FALSE;
     }
     ClearController(This->controller);

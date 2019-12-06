@@ -10,8 +10,8 @@
 #include <IndustryStandard/Bmp.h>
 #include <Pi/PiFirmwareFile.h>
 
+#include "Globals/GameState.h"
 #include "Globals/Graphics.h"
-#include "Globals/Sprites.h"
 
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *SpriteSheet;
 UINTN SpriteSheetSize;
@@ -27,7 +27,6 @@ GetScreen (
 	EFI_GRAPHICS_OUTPUT_PROTOCOL *Out;
 	UINTN HandleCount;
 	EFI_HANDLE* HandleBuffer = NULL;
-	//EFI_GRAPHICS_OUTPUT_BLT_PIXEL temp;
 	UINTN i;
 	EFI_STATUS Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiGraphicsOutputProtocolGuid, NULL, &HandleCount, &HandleBuffer);
 	if (EFI_ERROR(Status)) {
@@ -142,7 +141,11 @@ AddToBuffer (
 
 EFI_STATUS 
 LoadBMP (
-	CHAR16  *FileName
+	IN CHAR16  *FileName,
+	OUT EFI_GRAPHICS_OUTPUT_BLT_PIXEL **Buffer,
+	OUT UINTN *Height,
+	OUT UINTN *Width,
+	OUT UINTN *Size
 )
 {
 	EFI_STATUS Status = EFI_SUCCESS;
@@ -165,24 +168,23 @@ LoadBMP (
 
     ShellSetFilePosition(FileHandle, 0);
 	EFI_FILE_INFO *FileInfo = ShellGetFileInfo(FileHandle);
-	void *File = (void *) 1; //To make BmpSupportLib happy
-	UINTN Size = FileInfo->FileSize;
 
-	ShellReadFile(FileHandle, &Size, File);
+	void *File = (void *) 1; //To make BmpSupportLib happy
+	//UINTN Size = FileInfo->FileSize;
+
+	ShellReadFile(FileHandle, &FileInfo->FileSize, File);
 	if (EFI_ERROR(Status)) {
         goto Cleanup;
     }
 
-	SpriteSheet = 0;
-	SpriteSheetHeight = 0;
-	SpriteSheetSize = 0;
-	SpriteSheetWidth = 0;
+	*Buffer = 0;
+	*Height = 0;
+	*Width = 0;
 
-	Status = TranslateBmpToGopBlt(File, Size, &SpriteSheet, &SpriteSheetSize, &SpriteSheetHeight, &SpriteSheetWidth);
+	Status = TranslateBmpToGopBlt(File, FileInfo->FileSize, Buffer, Size, Height, Width);
 	if (EFI_ERROR(Status)) {
 		goto Cleanup;
 	}
-	SpriteLength = 8;
   Cleanup:
   	ShellCloseFile(&FileHandle);
     if (FullFileName != NULL) {

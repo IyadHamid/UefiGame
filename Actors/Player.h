@@ -19,6 +19,7 @@ typedef struct {
 ///
 typedef struct {
     Button buttons[MAX_BUTTONS];
+    UINT32 shiftState;
 } Controller;
 
 ///
@@ -61,6 +62,5 @@ Init (
 
 EFI_STATUS
 Tick(
-    IN Player *This,
-    IN BOOLEAN Input
+    IN Player *This
 );
