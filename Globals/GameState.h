@@ -6,11 +6,11 @@
 #define BMP_TILE_LENGTH 8
 #define JUMP_FRAME 3
 
-
 extern EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *Input;
 
 extern EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;
-extern EFI_GRAPHICS_OUTPUT_BLT_PIXEL *LevelBuffer;
+extern EFI_GRAPHICS_OUTPUT_BLT_PIXEL *DrawBuffer;
+extern UINT8 *LevelBuffer;
 extern UINTN LevelWidth;
 extern UINTN LevelHeight;
 

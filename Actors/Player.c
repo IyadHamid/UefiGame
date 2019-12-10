@@ -162,9 +162,9 @@ Tick (
                       );
     }
     //Add to level buffer
-    AddToBuffer(&LevelBuffer, 
-                LevelWidth, 
-                LevelHeight, 
+    AddToBuffer(&DrawBuffer, 
+                LevelWidth * SpriteLength, 
+                LevelHeight * SpriteLength, 
                 This->sprite, 
                 This->x / (LOCATION_PRECISION * SpriteLength), 
                 This->y / (LOCATION_PRECISION * SpriteLength), 

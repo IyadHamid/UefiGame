@@ -127,8 +127,8 @@ AddToBuffer (
 	if (Transparent) {
 		ZeroMem(&ZeroPixel, sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
 	}
-	for (y = 0; y < Height; y++) {
-		for (x = 0; x < Width; x++) {
+	for (y = 0; y < Height && y + DestinationY < SourceHeight; y++) {
+		for (x = 0; x < Width && y + DestinationX < SourceHeight; x++) {
 			Src = Addend[x + y * Width];
 			//If (not in transparent mode) and (not a zero pixel), add
 			if (!(Transparent && CompareMem(&Src, &ZeroPixel, 3) == 0)) {

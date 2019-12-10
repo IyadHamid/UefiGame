@@ -24,12 +24,12 @@
 #include "Actors/Player.h"
 #include "Globals/GameState.h"
 #include "Globals/Graphics.h"
-#include "Globals/Sprites.h"
 
 BOOLEAN IsRunning;
 EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *Input;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;
-EFI_GRAPHICS_OUTPUT_BLT_PIXEL *LevelBuffer;
+EFI_GRAPHICS_OUTPUT_BLT_PIXEL *DrawBuffer;
+UINT8 *LevelBuffer;
 UINTN LevelWidth;
 UINTN LevelHeight;
 
@@ -62,6 +62,18 @@ UefiMain (
   	goto Cleanup;
   }
 
+  //Get map
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *PixelMap;
+  Status = LoadBMP(L"EFI\\Game\\map.bmp", &PixelMap, &LevelHeight, &LevelWidth, &SpriteSheetSize); //Using SpriteSheetSize as temporary
+  if (EFI_ERROR(Status)) {
+    goto Cleanup;
+  }
+  LevelBuffer = AllocatePool(LevelWidth * LevelHeight * sizeof(UINT8));
+  for (UINTN i = 0; i < LevelWidth * LevelHeight; i++) {
+    LevelBuffer[i] = PixelMap[i].Red;
+  }
+  FreePool(PixelMap);
+
   //Get sprites
   Status = LoadBMP(L"EFI\\Game\\sprites.bmp", &SpriteSheet, &SpriteSheetHeight, &SpriteSheetWidth, &SpriteSheetSize);
   if (EFI_ERROR(Status)) {
@@ -74,9 +86,7 @@ UefiMain (
   SpriteLength *= 4;
 
   //Initialize Background
-  LevelWidth = 2048;
-  LevelHeight = 1024;
-  BackgroundBuffer = AllocatePool(LevelWidth * LevelHeight * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
+  BackgroundBuffer = AllocatePool(LevelWidth * SpriteLength * LevelHeight * SpriteLength * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
 
   //Initialize Player
   Player *player;
@@ -93,19 +103,19 @@ UefiMain (
   IsRunning = TRUE;
 
   while (IsRunning) {
-    //Copy Background to LevelBuffer
-    LevelBuffer = AllocateCopyPool(LevelWidth * LevelWidth, BackgroundBuffer);
+    //Copy Background to DrawBuffer
+    DrawBuffer = AllocateCopyPool(LevelWidth * SpriteLength * LevelHeight * SpriteLength, BackgroundBuffer);
     //Wait for tick
     gBS->WaitForEvent(1, &TickEvent, &eventId);
 
     Tick(player);
 
-    ExtractBuffer(LevelBuffer, LevelWidth, LevelHeight, 0, 0, &temp, 600, 600);
-    player->camera->screen->Blt(player->camera->screen, temp, EfiBltBufferToVideo, 0, 0, 0, 0, 600, 600, 0);
+    ExtractBuffer(DrawBuffer, LevelWidth * SpriteLength, LevelHeight * SpriteLength, 0, 0, &temp, 512, 512);
+    player->camera->screen->Blt(player->camera->screen, temp, EfiBltBufferToVideo, 0, 0, 0, 0, 512, 512, 0);
 
     //Free screen and temporary
     FreePool(temp);
-    FreePool(LevelBuffer);
+    FreePool(DrawBuffer);
   }
   
 Cleanup:

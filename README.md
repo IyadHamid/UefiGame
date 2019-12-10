@@ -10,13 +10,14 @@ The game loads a a sprite sheet that can easily be changed however the tile size
 |Features|Status|
 |:-----------------------|-------|
 |Overall|Working (as intended)|
-|Controller needs to be redone/fixed|In progress|
 |Physics (Collision/Gravity/Friction)|None|
+|Level creation|Developing|
 |Scrolling Camera|None|
 |Screen protocol selector|None|
 
 ## Changelog (Latest first)
 ### v0.0.0
+- Changed controller to be less "console-y"
 - Modularized LoadBMP
 - Found and squashed memory leak
 - Made BmpSupportLib happy and no changes in that are necessary
