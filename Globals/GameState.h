@@ -10,7 +10,6 @@ extern EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *Input;
 
 extern EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;
 extern EFI_GRAPHICS_OUTPUT_BLT_PIXEL *DrawBuffer;
-extern UINT8 *LevelBuffer;
 extern UINTN LevelWidth;
 extern UINTN LevelHeight;
 

@@ -29,7 +29,6 @@ BOOLEAN IsRunning;
 EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *Input;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *DrawBuffer;
-UINT8 *LevelBuffer;
 UINTN LevelWidth;
 UINTN LevelHeight;
 
@@ -62,18 +61,6 @@ UefiMain (
   	goto Cleanup;
   }
 
-  //Get map
-  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *PixelMap;
-  Status = LoadBMP(L"EFI\\Game\\map.bmp", &PixelMap, &LevelHeight, &LevelWidth, &SpriteSheetSize); //Using SpriteSheetSize as temporary
-  if (EFI_ERROR(Status)) {
-    goto Cleanup;
-  }
-  LevelBuffer = AllocatePool(LevelWidth * LevelHeight * sizeof(UINT8));
-  for (UINTN i = 0; i < LevelWidth * LevelHeight; i++) {
-    LevelBuffer[i] = PixelMap[i].Red;
-  }
-  FreePool(PixelMap);
-
   //Get sprites
   Status = LoadBMP(L"EFI\\Game\\sprites.bmp", &SpriteSheet, &SpriteSheetHeight, &SpriteSheetWidth, &SpriteSheetSize);
   if (EFI_ERROR(Status)) {
@@ -81,12 +68,48 @@ UefiMain (
   }
 	SpriteLength = BMP_TILE_LENGTH;
 
+  //Get map
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *PixelMap;
+  Status = LoadBMP(L"EFI\\Game\\map.bmp", &PixelMap, &LevelHeight, &LevelWidth, &SpriteSheetSize); //Using SpriteSheetSize as temporary
+  if (EFI_ERROR(Status)) {
+    goto Cleanup;
+  }
+
   //Scale sprites up
   ScaleBuffer(&SpriteSheet, &SpriteSheetWidth, &SpriteSheetHeight, 4);
   SpriteLength *= 4;
 
   //Initialize Background
   BackgroundBuffer = AllocatePool(LevelWidth * SpriteLength * LevelHeight * SpriteLength * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
+  temp = AllocatePool(SpriteLength * SpriteLength * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
+  for (UINTN i = 0; i < LevelWidth * LevelHeight; i++) {
+    if (PixelMap[i].Red != 0) { 
+      if (PixelMap[i].Red != PixelMap[i - 1].Red) {
+        ExtractBuffer(SpriteSheet, 
+                      SpriteSheetWidth, 
+                      SpriteSheetHeight, 
+                      (PixelMap[i].Red - 1) * SpriteLength, 
+                      2 * SpriteLength, 
+                      &temp, 
+                      SpriteLength, 
+                      SpriteLength
+                      );
+      }
+      AddToBuffer(&BackgroundBuffer, 
+                  LevelWidth * SpriteLength, 
+                  LevelHeight * SpriteLength, 
+                  temp, 
+                  (i % LevelWidth) * SpriteLength, 
+                  (i / LevelWidth) * SpriteLength, 
+                  SpriteLength, 
+                  SpriteLength, 
+                  FALSE
+                  );
+    }
+  }
+  FreePool(temp);
+  FreePool(PixelMap);
 
   //Initialize Player
   Player *player;
@@ -94,7 +117,6 @@ UefiMain (
   Init(player);
 
   //Setup tick loop
-  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
   EFI_EVENT TickEvent;
   UINTN eventId;
 

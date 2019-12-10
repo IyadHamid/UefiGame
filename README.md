@@ -4,7 +4,7 @@ To build, clone [edk2](https://github.com/tianocore/edk2.git) and follow build i
 
 The game loads a a sprite sheet that can easily be changed however the tile size is defined to be 8x8 in the [gamestate](.\globals\gamestate.h)
 
-![.\sprites.bmp](.\sprites.bmp "Sprites")
+![.\sprites.bmp](.\Assets\sprites.bmp "Sprites")
 
 ## Issues
 |Features|Status|
@@ -14,6 +14,8 @@ The game loads a a sprite sheet that can easily be changed however the tile size
 |Level creation|Developing|
 |Scrolling Camera|None|
 |Screen protocol selector|None|
+|Game.c is becoming sloppy|None|
+|calling build from finish.bat is sketch|None|
 
 ## Changelog (Latest first)
 ### v0.0.0
