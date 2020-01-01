@@ -2,6 +2,8 @@
 #include <IndustryStandard/Bmp.h>
 #pragma once
 
+extern EFI_GRAPHICS_OUTPUT_BLT_PIXEL ZeroPixel;
+
 EFI_STATUS
 GetScreen(
 	IN OUT EFI_GRAPHICS_OUTPUT_PROTOCOL **Screen
@@ -48,4 +50,8 @@ LoadBMP (
 	OUT UINTN *Height,
 	OUT UINTN *Width,
 	OUT UINTN *Size
+);
+
+EFI_STATUS
+InitBackground (
 );

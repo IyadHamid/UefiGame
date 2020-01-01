@@ -41,6 +41,7 @@
   ShellLib
   BmpSupportLib
   SafeIntLib
+  DebugLib
 
 [Guids]
 

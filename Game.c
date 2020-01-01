@@ -1,10 +1,3 @@
-/** @file
-  Brief Description of UEFI MyHelloWorld
-  Detailed Description of UEFI MyHelloWorld
-  Copyright for UEFI MyHelloWorld
-  License for UEFI MyHelloWorld
-**/
-
 #include <Uefi.h>
 #include <Library/UefiApplicationEntryPoint.h>
 #include <Library/UefiLib.h>
@@ -14,6 +7,7 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/BaseMemoryLib.h>
 #include <Protocol/GraphicsOutput.h>
 #include <Protocol/SimpleFileSystem.h>
 #include <Library/BmpSupportLib.h>
@@ -25,10 +19,14 @@
 #include "Globals/GameState.h"
 #include "Globals/Graphics.h"
 
+#define SCALE 4
+
 BOOLEAN IsRunning;
+EFI_GRAPHICS_OUTPUT_BLT_PIXEL ZeroPixel;
 EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *Input;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BackgroundBuffer;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL *DrawBuffer;
+UINT8 *LevelBuffer; 
 UINTN LevelWidth;
 UINTN LevelHeight;
 
@@ -53,6 +51,7 @@ UefiMain (
 
   gST->ConOut->ClearScreen(gST->ConOut);
   gST->ConOut->EnableCursor(gST->ConOut, FALSE);
+  ZeroMem(&ZeroPixel, sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
 
   //Get input
   Input = (void *)1;
@@ -68,48 +67,11 @@ UefiMain (
   }
 	SpriteLength = BMP_TILE_LENGTH;
 
-  //Get map
-  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *PixelMap;
-  Status = LoadBMP(L"EFI\\Game\\map.bmp", &PixelMap, &LevelHeight, &LevelWidth, &SpriteSheetSize); //Using SpriteSheetSize as temporary
-  if (EFI_ERROR(Status)) {
-    goto Cleanup;
-  }
-
   //Scale sprites up
-  ScaleBuffer(&SpriteSheet, &SpriteSheetWidth, &SpriteSheetHeight, 4);
-  SpriteLength *= 4;
+  ScaleBuffer(&SpriteSheet, &SpriteSheetWidth, &SpriteSheetHeight, SCALE);
+  SpriteLength *= SCALE;
 
-  //Initialize Background
-  BackgroundBuffer = AllocatePool(LevelWidth * SpriteLength * LevelHeight * SpriteLength * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
-  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
-  temp = AllocatePool(SpriteLength * SpriteLength * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
-  for (UINTN i = 0; i < LevelWidth * LevelHeight; i++) {
-    if (PixelMap[i].Red != 0) { 
-      if (PixelMap[i].Red != PixelMap[i - 1].Red) {
-        ExtractBuffer(SpriteSheet, 
-                      SpriteSheetWidth, 
-                      SpriteSheetHeight, 
-                      (PixelMap[i].Red - 1) * SpriteLength, 
-                      2 * SpriteLength, 
-                      &temp, 
-                      SpriteLength, 
-                      SpriteLength
-                      );
-      }
-      AddToBuffer(&BackgroundBuffer, 
-                  LevelWidth * SpriteLength, 
-                  LevelHeight * SpriteLength, 
-                  temp, 
-                  (i % LevelWidth) * SpriteLength, 
-                  (i / LevelWidth) * SpriteLength, 
-                  SpriteLength, 
-                  SpriteLength, 
-                  FALSE
-                  );
-    }
-  }
-  FreePool(temp);
-  FreePool(PixelMap);
+  InitBackground();
 
   //Initialize Player
   Player *player;
@@ -122,6 +84,7 @@ UefiMain (
 
   gBS->CreateEvent(EVT_TIMER, TPL_NOTIFY, NULL, NULL, &TickEvent);
 	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 50);
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
   IsRunning = TRUE;
 
   while (IsRunning) {
@@ -131,15 +94,12 @@ UefiMain (
     gBS->WaitForEvent(1, &TickEvent, &eventId);
 
     Tick(player);
-
     ExtractBuffer(DrawBuffer, LevelWidth * SpriteLength, LevelHeight * SpriteLength, 0, 0, &temp, 512, 512);
     player->camera->screen->Blt(player->camera->screen, temp, EfiBltBufferToVideo, 0, 0, 0, 0, 512, 512, 0);
-
     //Free screen and temporary
     FreePool(temp);
     FreePool(DrawBuffer);
   }
-  
 Cleanup:
   gST->ConOut->EnableCursor(gST->ConOut, TRUE);
   gST->ConOut->ClearScreen(gST->ConOut);

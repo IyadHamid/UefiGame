@@ -6,12 +6,16 @@
 #include <Pi/PiFirmwareFile.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
-
 #include <Protocol/SimpleTextInEx.h>
+
+#include <Library/DebugLib.h>
 
 #include "Actors/Player.h"
 #include "Globals/GameState.h"
 #include "Globals/Graphics.h"
+
+#define TO_PIXEL(A) ((A) / LOCATION_PRECISION)
+#define TO_TILE(A) ((A) / (LOCATION_PRECISION * SpriteLength))
 
 EFI_INPUT_KEY last;
 
@@ -77,7 +81,46 @@ Init (
                   SpriteLength,
                   SpriteLength
                   );
+    DEBUG((EFI_D_INIT, "Initialized Player"));
     return EFI_SUCCESS;
+}
+
+BOOLEAN
+CheckCollision (
+    Player *This
+) 
+{
+    UINTN offset = LOCATION_PRECISION * (SpriteLength - 1);
+    BOOLEAN colliding = FALSE;
+    //UINTN i;
+
+    UINTN prevX = This->x - This->velX;
+    UINTN prevY = This->y - This->velY;
+
+    if (
+        LevelBuffer[TO_TILE(This->x         ) + TO_TILE(prevY         ) * LevelWidth] != 0 ||
+        LevelBuffer[TO_TILE(This->x + offset) + TO_TILE(prevY         ) * LevelWidth] != 0 ||
+        LevelBuffer[TO_TILE(This->x         ) + TO_TILE(prevY + offset) * LevelWidth] != 0 ||
+        LevelBuffer[TO_TILE(This->x + offset) + TO_TILE(prevY + offset) * LevelWidth] != 0 
+    ) 
+    {
+        This->x = prevX;
+        This->velX = 0;
+        colliding = TRUE;
+    }
+    if (
+        LevelBuffer[TO_TILE(prevX         ) + TO_TILE(This->y         ) * LevelWidth] != 0 ||
+        LevelBuffer[TO_TILE(prevX + offset) + TO_TILE(This->y         ) * LevelWidth] != 0 ||
+        LevelBuffer[TO_TILE(prevX         ) + TO_TILE(This->y + offset) * LevelWidth] != 0 ||
+        LevelBuffer[TO_TILE(prevX + offset) + TO_TILE(This->y + offset) * LevelWidth] != 0 
+    ) 
+    {
+        This->y = prevY;
+        This->velY = 0;
+        colliding = TRUE;
+
+    }
+    return colliding;
 }
 
 EFI_STATUS
@@ -125,8 +168,8 @@ Tick (
     #   # #   # #  ## #   # #     #          #   #  ## #     #   #   #  
     #   # #   # #   # ####  ##### #####    ##### #   # #      ###    #  
     */
-    UINTN rate = SpriteLength * LOCATION_PRECISION;
-
+    UINTN rate = LOCATION_PRECISION / 2;
+    
     if (This->controller->buttons[UP].state) {
         This->velY -= rate;
     }
@@ -143,17 +186,20 @@ Tick (
         IsRunning = FALSE;
     }
     ClearController(This->controller);
+    This->velY += LOCATION_PRECISION / 2;
 
     //Get new sprite and location if moving
     if (This->velX != 0 || This->velY != 0) {
         This->x += This->velX;
         This->y += This->velY;
-
+        CheckCollision(This);
+    }
+    if (This->velX != 0 || This->velY != 0) {
         //Get sprite
         ExtractBuffer(SpriteSheet,
                       SpriteSheetWidth,
                       SpriteSheetHeight,
-                      This->velY == 0 ? ((This->x / (LOCATION_PRECISION * 64)) % JUMP_FRAME) * SpriteLength 
+                      This->velY == 0 ? ((This->x / (LOCATION_PRECISION * 8)) % JUMP_FRAME) * SpriteLength 
                                       : JUMP_FRAME * SpriteLength, //Get jump/midair sprite
                       (UINTN)(This->velX < 0) * SpriteLength,
                       &This->sprite,
@@ -166,8 +212,8 @@ Tick (
                 LevelWidth * SpriteLength, 
                 LevelHeight * SpriteLength, 
                 This->sprite, 
-                This->x / (LOCATION_PRECISION * SpriteLength), 
-                This->y / (LOCATION_PRECISION * SpriteLength), 
+                TO_PIXEL(This->x), 
+                TO_PIXEL(This->y), 
                 SpriteLength, 
                 SpriteLength, 
                 TRUE

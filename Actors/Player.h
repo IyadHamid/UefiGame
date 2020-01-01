@@ -45,6 +45,7 @@ typedef struct {
     UINTN y;
     INTN velX;
     INTN velY;
+    BOOLEAN colliding;
     Controller *controller;
     Camera *camera;
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL *sprite;

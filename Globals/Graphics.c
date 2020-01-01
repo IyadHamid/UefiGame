@@ -118,15 +118,10 @@ AddToBuffer (
 	IN BOOLEAN Transparent
 )
 {
-	EFI_GRAPHICS_OUTPUT_BLT_PIXEL ZeroPixel;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL Src;
 	UINTN x;
 	UINTN y;
 
-	//Defined zero pixel as pure black
-	if (Transparent) {
-		ZeroMem(&ZeroPixel, sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
-	}
 	for (y = 0; y < Height && y + DestinationY < SourceHeight; y++) {
 		for (x = 0; x < Width && y + DestinationX < SourceHeight; x++) {
 			Src = Addend[x + y * Width];
@@ -192,4 +187,58 @@ LoadBMP (
     }
 
 	return Status;
+}
+
+EFI_STATUS
+InitBackground (
+) 
+{
+	EFI_STATUS Status;
+	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *PixelMap;
+	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Tile;
+
+	Status = LoadBMP(L"EFI\\Game\\map.bmp", &PixelMap, &LevelHeight, &LevelWidth, &SpriteSheetSize); //Using SpriteSheetSize as temporary
+	if (EFI_ERROR(Status)) {
+	  goto Cleanup;
+	}
+
+	BackgroundBuffer = AllocatePool(LevelWidth * SpriteLength * LevelHeight * SpriteLength * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
+	LevelBuffer = AllocatePool(LevelWidth * LevelHeight * sizeof(UINT8));
+
+	Tile = AllocatePool(SpriteLength * SpriteLength * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
+	for (UINTN i = 0; i < LevelWidth * LevelHeight; i++) {
+		LevelBuffer[i] = PixelMap[i].Red;
+		if (PixelMap[i].Red != 0) { 
+			if (PixelMap[i].Red != PixelMap[i - 1].Red) {
+				if (Tile != NULL) {
+					FreePool(Tile);
+				}
+	    		ExtractBuffer(SpriteSheet, 
+	                    	  SpriteSheetWidth, 
+	                    	  SpriteSheetHeight, 
+	                    	  (PixelMap[i].Red - 1) * SpriteLength, 
+	                    	  2 * SpriteLength, 
+	                    	  &Tile, 
+	                    	  SpriteLength, 
+	                    	  SpriteLength
+	                    	  );
+	    }
+	    AddToBuffer(&BackgroundBuffer, 
+	                LevelWidth * SpriteLength, 
+	                LevelHeight * SpriteLength, 
+	                Tile, 
+	                (i % LevelWidth) * SpriteLength, 
+	                (i / LevelWidth) * SpriteLength, 
+	                SpriteLength, 
+	                SpriteLength, 
+	                FALSE
+	                );
+	  }
+	}
+	if (Tile != NULL) {
+		FreePool(Tile);
+	}
+	FreePool(PixelMap);	
+  Cleanup:
+  	return Status;
 }
