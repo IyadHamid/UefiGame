@@ -30,7 +30,7 @@ FW CFG Revision: 0x3
 QemuFwCfg interface (DMA) is supported.
 Platform PEIM Loaded
 CMOS:
-00: 29 00 44 00 03 00 04 01 01 20 26 02 10 80 00 00
+00: 22 00 42 00 05 00 04 15 01 20 26 02 10 80 00 00
 10: 50 00 F0 00 07 80 02 FF FF 2F 00 00 04 10 FF FF
 20: C8 00 04 3F 00 00 00 00 00 00 00 00 00 00 00 00
 30: FF FF 20 00 00 1F 00 20 30 00 00 00 00 12 00 00
@@ -1613,10 +1613,10 @@ FSOpen: Open '\EFI\Game\Game.efi' Success
 FSOpen: Open '\EFI\Game\Game.efi' Success
 [Security] 3rd party image[0] can be loaded after EndOfDxe: PciRoot(0x0)/Pci(0x1,0x1)/Ata(Primary,Master,0x0)/HD(1,MBR,0xBE1AFDFA,0x3F,0xFBFC1)/\EFI\Game\Game.efi.
 InstallProtocolInterface: 5B1B31A1-9562-11D2-8E3F-00A0C969723B 1E7D4040
-Loading driver at 0x0001E7CC000 EntryPoint=0x0001E7CC280 Game.efi
+Loading driver at 0x0001E7CA000 EntryPoint=0x0001E7CA2A0 Game.efi
 InstallProtocolInterface: BC62157E-3E33-4FEC-9920-2D3B36D750DF 1E7DA518
 ProtectUefiImageCommon - 0x1E7D4040
-  - 0x000000001E7CC000 - 0x0000000000003480
+  - 0x000000001E7CA000 - 0x0000000000004B60
 InstallProtocolInterface: 752F3136-4E16-4FDC-A22A-E5F46812F4CA 1FEA2668
 FSOpen: Open '\EFI\Game\sprites.bmp' Success
 FSOpen: Open '\EFI\Game\sprites.bmp' Success

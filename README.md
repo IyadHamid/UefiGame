@@ -10,15 +10,16 @@ The game loads a a sprite sheet that can easily be changed however the tile size
 |Features|Status|
 |:-----------------------|-------|
 |Overall|Working (as intended)|
-|Physics (Collision/Gravity/Friction)|None|
-|Level creation|Developing|
+|Physics (Collision/Gravity/Friction)|Minor bugs|
+|Level creation|Minimal, undocumented|
 |Scrolling Camera|None|
 |Screen protocol selector|None|
-|Game.c is becoming sloppy|None|
+|Game.c is becoming sloppy|Cleaned|
 |calling build from finish.bat is sketch|None|
 
 ## Changelog (Latest first)
 ### v0.0.0
+- Added Collisions w/ Gravity
 - Changed controller to be less "console-y"
 - Modularized LoadBMP
 - Found and squashed memory leak

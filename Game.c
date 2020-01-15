@@ -20,6 +20,7 @@
 #include "Globals/Graphics.h"
 
 #define SCALE 4
+#define T Print(L"%d", zxc); zxc++;
 
 BOOLEAN IsRunning;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL ZeroPixel;
@@ -51,28 +52,30 @@ UefiMain (
 
   gST->ConOut->ClearScreen(gST->ConOut);
   gST->ConOut->EnableCursor(gST->ConOut, FALSE);
+  Print(L"Hello World!\n");
   ZeroMem(&ZeroPixel, sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
 
   //Get input
   Input = (void *)1;
   Status = gBS->HandleProtocol(gST->ConsoleInHandle, &gEfiSimpleTextInputExProtocolGuid, (VOID **)&Input);
   if (EFI_ERROR(Status)) {
+    ErrorPrint(L"Unable to get gEfiSimpleTextInputExProtocol\n");
   	goto Cleanup;
   }
 
   //Get sprites
   Status = LoadBMP(L"EFI\\Game\\sprites.bmp", &SpriteSheet, &SpriteSheetHeight, &SpriteSheetWidth, &SpriteSheetSize);
   if (EFI_ERROR(Status)) {
+    ErrorPrint(L"Unable to find sprites.bmp\n");
     goto Cleanup;
   }
+
 	SpriteLength = BMP_TILE_LENGTH;
 
   //Scale sprites up
   ScaleBuffer(&SpriteSheet, &SpriteSheetWidth, &SpriteSheetHeight, SCALE);
   SpriteLength *= SCALE;
-
   InitBackground();
-
   //Initialize Player
   Player *player;
   player = AllocatePool(sizeof(player));
@@ -81,12 +84,11 @@ UefiMain (
   //Setup tick loop
   EFI_EVENT TickEvent;
   UINTN eventId;
-
   gBS->CreateEvent(EVT_TIMER, TPL_NOTIFY, NULL, NULL, &TickEvent);
-	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 50);
+	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 100);
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
-  IsRunning = TRUE;
 
+  IsRunning = TRUE;
   while (IsRunning) {
     //Copy Background to DrawBuffer
     DrawBuffer = AllocateCopyPool(LevelWidth * SpriteLength * LevelHeight * SpriteLength, BackgroundBuffer);
@@ -95,6 +97,7 @@ UefiMain (
 
     Tick(player);
     ExtractBuffer(DrawBuffer, LevelWidth * SpriteLength, LevelHeight * SpriteLength, 0, 0, &temp, 512, 512);
+    
     player->camera->screen->Blt(player->camera->screen, temp, EfiBltBufferToVideo, 0, 0, 0, 0, 512, 512, 0);
     //Free screen and temporary
     FreePool(temp);
@@ -102,6 +105,8 @@ UefiMain (
   }
 Cleanup:
   gST->ConOut->EnableCursor(gST->ConOut, TRUE);
-  gST->ConOut->ClearScreen(gST->ConOut);
+  if (!EFI_ERROR(Status)) {
+    gST->ConOut->ClearScreen(gST->ConOut);
+  }
   return Status;
 }

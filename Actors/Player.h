@@ -31,21 +31,29 @@ typedef struct {
     EFI_GRAPHICS_OUTPUT_PROTOCOL *screen;
 } Camera;
 
+typedef struct {
+    UINT8 colliding : 1;
+    UINT8 midair : 1;
+} playerFlags;
+
 ///
 /// Player information
 ///
 typedef struct {
     ///
-    /// X coord, 1/10 of 1 tile
+    /// X coord
     ///
     UINTN x;
     ///
-    /// Y coord, 1/10 of 1 tile
+    /// Y coord
     ///
     UINTN y;
     INTN velX;
     INTN velY;
-    BOOLEAN colliding;
+    ///
+    /// Colliding, Midair
+    ///
+    playerFlags flags;
     Controller *controller;
     Camera *camera;
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL *sprite;

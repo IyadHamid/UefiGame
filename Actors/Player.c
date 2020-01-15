@@ -14,8 +14,9 @@
 #include "Globals/GameState.h"
 #include "Globals/Graphics.h"
 
-#define TO_PIXEL(A) ((A) / LOCATION_PRECISION)
-#define TO_TILE(A) ((A) / (LOCATION_PRECISION * SpriteLength))
+#define TO_PIXEL(A) ((A) / (INTN)(LOCATION_PRECISION))
+#define TO_TILE(A) ((A) / (INTN)(LOCATION_PRECISION * SpriteLength))
+#define FROM_TILE(A) ((A) * LOCATION_PRECISION * SpriteLength)
 
 EFI_INPUT_KEY last;
 
@@ -70,12 +71,13 @@ Init (
     This->y = 0;
     This->velX = 0;
     This->velY = 0;
+    //This->flags - Will be set prior to displaying
     This->controller = con;
     This->camera = cam;
     ExtractBuffer(SpriteSheet,
                   SpriteSheetWidth,
                   SpriteSheetHeight,
-                  0, //Sprite 0
+                  0, //Frame 1
                   0, //Facing right
                   &This->sprite,
                   SpriteLength,
@@ -86,39 +88,80 @@ Init (
 }
 
 BOOLEAN
-CheckCollision (
+ CheckCollision (
     Player *This
 ) 
 {
-    UINTN offset = LOCATION_PRECISION * (SpriteLength - 1);
+    UINTN offset = LOCATION_PRECISION * (SpriteLength - 1); //other end of sprite
     BOOLEAN colliding = FALSE;
-    //UINTN i;
+    INTN i = 0;
 
     UINTN prevX = This->x - This->velX;
     UINTN prevY = This->y - This->velY;
+    
+    //Are new X-coords colliding? (with old y)
+    if (This->velX / LOCATION_PRECISION != 0) {
+        if (
+            LevelBuffer[TO_TILE(This->x         ) + TO_TILE(prevY         ) * LevelWidth] != 0 ||
+            LevelBuffer[TO_TILE(This->x + offset) + TO_TILE(prevY         ) * LevelWidth] != 0 ||
+            LevelBuffer[TO_TILE(This->x         ) + TO_TILE(prevY + offset) * LevelWidth] != 0 ||
+            LevelBuffer[TO_TILE(This->x + offset) + TO_TILE(prevY + offset) * LevelWidth] != 0 
+        ) 
+        {
+            const BOOLEAN positive = This->velX >= 0;
+            
+            i = TO_TILE(This->velX);
+            positive ? i++ : i--;
+            while (1) {
+                if (LevelBuffer[(TO_TILE(prevX) + i) + TO_TILE(prevY) * LevelWidth] == 0) {
+                    This->x = FROM_TILE(TO_TILE(prevX) + i);
+                    break;
+                }
+                //increment i towards 0
+                !positive ? i++ : i--;
+            }
 
-    if (
-        LevelBuffer[TO_TILE(This->x         ) + TO_TILE(prevY         ) * LevelWidth] != 0 ||
-        LevelBuffer[TO_TILE(This->x + offset) + TO_TILE(prevY         ) * LevelWidth] != 0 ||
-        LevelBuffer[TO_TILE(This->x         ) + TO_TILE(prevY + offset) * LevelWidth] != 0 ||
-        LevelBuffer[TO_TILE(This->x + offset) + TO_TILE(prevY + offset) * LevelWidth] != 0 
-    ) 
-    {
-        This->x = prevX;
-        This->velX = 0;
-        colliding = TRUE;
+            This->velX = 0;
+            colliding = TRUE;
+        }
     }
-    if (
-        LevelBuffer[TO_TILE(prevX         ) + TO_TILE(This->y         ) * LevelWidth] != 0 ||
-        LevelBuffer[TO_TILE(prevX + offset) + TO_TILE(This->y         ) * LevelWidth] != 0 ||
-        LevelBuffer[TO_TILE(prevX         ) + TO_TILE(This->y + offset) * LevelWidth] != 0 ||
-        LevelBuffer[TO_TILE(prevX + offset) + TO_TILE(This->y + offset) * LevelWidth] != 0 
-    ) 
-    {
-        This->y = prevY;
-        This->velY = 0;
-        colliding = TRUE;
 
+    //Are new Y-coords colliding? (with old x)
+    if (This->velY / LOCATION_PRECISION != 0) {
+        if ( 
+            LevelBuffer[TO_TILE(prevX         ) + TO_TILE(This->y         ) * LevelWidth] != 0 ||
+            LevelBuffer[TO_TILE(prevX + offset) + TO_TILE(This->y         ) * LevelWidth] != 0 ||
+            LevelBuffer[TO_TILE(prevX         ) + TO_TILE(This->y + offset) * LevelWidth] != 0 ||
+            LevelBuffer[TO_TILE(prevX + offset) + TO_TILE(This->y + offset) * LevelWidth] != 0 
+        ) 
+        {
+            const BOOLEAN positive = This->velY >= 0;
+            i = TO_TILE(This->velY);
+            positive ? i++ : i--;
+            while (1) {
+                if (LevelBuffer[TO_TILE(prevX) + (TO_TILE(prevY) + i) * LevelWidth] == 0 || i == 0) {
+                    This->y = FROM_TILE(TO_TILE(prevY) + i);
+                    break;
+                }
+                //increment i towards 0
+                !positive ? i++ : i--;
+            }
+            if (positive && This->flags.midair) { //Only colliding on bottom
+                This->flags.midair = 0;
+            }
+            This->velY = 0;
+            colliding = TRUE;
+        }
+        else {
+            This->flags.midair = 1;
+        }
+    }
+
+    if (colliding) {
+        This->flags.colliding = 1;
+    }
+    else {
+        This->flags.colliding = 0;
     }
     return colliding;
 }
@@ -171,7 +214,7 @@ Tick (
     UINTN rate = LOCATION_PRECISION / 2;
     
     if (This->controller->buttons[UP].state) {
-        This->velY -= rate;
+        This->velY -= LOCATION_PRECISION;
     }
     else if (This->controller->buttons[DOWN].state) {
         This->velY += rate;
@@ -186,27 +229,31 @@ Tick (
         IsRunning = FALSE;
     }
     ClearController(This->controller);
-    This->velY += LOCATION_PRECISION / 2;
+
+    //Gravity
+    //if (This->flags.midair) {
+        This->velY += LOCATION_PRECISION / 2;
+    //}
 
     //Get new sprite and location if moving
     if (This->velX != 0 || This->velY != 0) {
         This->x += This->velX;
         This->y += This->velY;
         CheckCollision(This);
-    }
-    if (This->velX != 0 || This->velY != 0) {
+
         //Get sprite
         ExtractBuffer(SpriteSheet,
                       SpriteSheetWidth,
                       SpriteSheetHeight,
-                      This->velY == 0 ? ((This->x / (LOCATION_PRECISION * 8)) % JUMP_FRAME) * SpriteLength 
-                                      : JUMP_FRAME * SpriteLength, //Get jump/midair sprite
+                      This->flags.midair ? JUMP_FRAME * SpriteLength //Get jump/midair sprite
+                                         : ((This->x / (LOCATION_PRECISION * 8)) % JUMP_FRAME) * SpriteLength,
                       (UINTN)(This->velX < 0) * SpriteLength,
                       &This->sprite,
                       SpriteLength,
                       SpriteLength
                       );
     }
+
     //Add to level buffer
     AddToBuffer(&DrawBuffer, 
                 LevelWidth * SpriteLength, 
