@@ -20,25 +20,20 @@
 
 EFI_INPUT_KEY last;
 
-EFI_STATUS
+VOID
 ClearController (
     IN Controller *This
 )
 {
-    if (This == NULL) {
-        return RETURN_INVALID_PARAMETER;
-    }
-
     UINTN i;
     for (i = 0; i < MAX_BUTTONS; i++) {
         This->buttons[i].state = FALSE;
     }
 
     This->shiftState = 0;
-    return RETURN_SUCCESS;
 }
 
-EFI_STATUS
+VOID
 Init (
     IN Player *This
 )
@@ -55,7 +50,7 @@ Init (
     con->buttons[LEFT].scanCode  = SCAN_NULL; 
     con->buttons[LEFT].unicode   = u'a';
     con->buttons[RIGHT].scanCode = SCAN_NULL; 
-    con->buttons[RIGHT].unicode  = u'd';
+    con->buttons[RIGHT].unicode  = u'f';
     con->buttons[QUIT].scanCode  = SCAN_ESC;
     con->buttons[QUIT].unicode   = 0;
     ClearController(con);
@@ -83,15 +78,15 @@ Init (
                   SpriteLength,
                   SpriteLength
                   );
-    DEBUG((EFI_D_INIT, "Initialized Player"));
-    return EFI_SUCCESS;
 }
 
 BOOLEAN
- CheckCollision (
+CheckCollision (
     Player *This
 ) 
 {
+    This->x += This->velX;
+    This->y += This->velY;
     UINTN offset = LOCATION_PRECISION * (SpriteLength - 1); //other end of sprite
     BOOLEAN colliding = FALSE;
     INTN i = 0;
@@ -121,7 +116,8 @@ BOOLEAN
                 !positive ? i++ : i--;
             }
 
-            This->velX = 0;
+            This->velX = positive ? 0 : -0;
+
             colliding = TRUE;
         }
     }
@@ -145,6 +141,7 @@ BOOLEAN
                 }
                 //increment i towards 0
                 !positive ? i++ : i--;
+                
             }
             if (positive && This->flags.midair) { //Only colliding on bottom
                 This->flags.midair = 0;
@@ -166,7 +163,7 @@ BOOLEAN
     return colliding;
 }
 
-EFI_STATUS
+VOID
 Tick (
     IN Player *This
 )
@@ -231,14 +228,12 @@ Tick (
     ClearController(This->controller);
 
     //Gravity
-    //if (This->flags.midair) {
-        This->velY += LOCATION_PRECISION / 2;
-    //}
+    This->velY += LOCATION_PRECISION / 2;
 
     //Get new sprite and location if moving
     if (This->velX != 0 || This->velY != 0) {
-        This->x += This->velX;
-        This->y += This->velY;
+        UINT8 facingLeft = (UINT8)(This->velX < 0);
+        
         CheckCollision(This);
 
         //Get sprite
@@ -247,7 +242,7 @@ Tick (
                       SpriteSheetHeight,
                       This->flags.midair ? JUMP_FRAME * SpriteLength //Get jump/midair sprite
                                          : ((This->x / (LOCATION_PRECISION * 8)) % JUMP_FRAME) * SpriteLength,
-                      (UINTN)(This->velX < 0) * SpriteLength,
+                      facingLeft * SpriteLength, //Go down one tile (in the sprite sheet) if facing left
                       &This->sprite,
                       SpriteLength,
                       SpriteLength
@@ -265,5 +260,4 @@ Tick (
                 SpriteLength, 
                 TRUE
                 );
-    return EFI_SUCCESS;
 }

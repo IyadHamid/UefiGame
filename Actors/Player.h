@@ -59,17 +59,17 @@ typedef struct {
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL *sprite;
 } Player;
 
-EFI_STATUS
+VOID
 ClearController (
     IN Controller *This
 );
 
-EFI_STATUS
+VOID
 Init (
     IN Player *This
 );
 
-EFI_STATUS
+VOID
 Tick(
     IN Player *This
 );

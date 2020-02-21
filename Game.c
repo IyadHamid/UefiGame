@@ -84,12 +84,13 @@ UefiMain (
   //Setup tick loop
   EFI_EVENT TickEvent;
   UINTN eventId;
-  gBS->CreateEvent(EVT_TIMER, TPL_NOTIFY, NULL, NULL, &TickEvent);
-	gBS->SetTimer(TickEvent, TimerPeriodic, 1000 * 100);
+  gBS->CreateEvent(EVT_TIMER, 0, NULL, NULL, &TickEvent);
+	gBS->SetTimer(TickEvent, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(10));
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
 
   IsRunning = TRUE;
   while (IsRunning) {
+  
     //Copy Background to DrawBuffer
     DrawBuffer = AllocateCopyPool(LevelWidth * SpriteLength * LevelHeight * SpriteLength, BackgroundBuffer);
     //Wait for tick
@@ -104,6 +105,7 @@ UefiMain (
     FreePool(DrawBuffer);
   }
 Cleanup:
+  gBS->CloseEvent(TickEvent);
   gST->ConOut->EnableCursor(gST->ConOut, TRUE);
   if (!EFI_ERROR(Status)) {
     gST->ConOut->ClearScreen(gST->ConOut);
