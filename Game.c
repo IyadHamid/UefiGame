@@ -95,7 +95,6 @@ UefiMain (
     DrawBuffer = AllocateCopyPool(LevelWidth * SpriteLength * LevelHeight * SpriteLength, BackgroundBuffer);
     //Wait for tick
     gBS->WaitForEvent(1, &TickEvent, &eventId);
-
     Tick(player);
     ExtractBuffer(DrawBuffer, LevelWidth * SpriteLength, LevelHeight * SpriteLength, 0, 0, &temp, 512, 512);
     

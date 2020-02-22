@@ -31,9 +31,13 @@ typedef struct {
     EFI_GRAPHICS_OUTPUT_PROTOCOL *screen;
 } Camera;
 
+///
+/// Player flags
+///
 typedef struct {
-    UINT8 colliding : 1;
-    UINT8 midair : 1;
+    BOOLEAN colliding : 1;
+    BOOLEAN midair : 1;
+    BOOLEAN facingRight : 1;
 } playerFlags;
 
 ///
@@ -62,6 +66,10 @@ typedef struct {
 VOID
 ClearController (
     IN Controller *This
+);
+
+VOID RefreshController(
+    IN Player *This
 );
 
 VOID

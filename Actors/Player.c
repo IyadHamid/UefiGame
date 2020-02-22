@@ -50,7 +50,7 @@ Init (
     con->buttons[LEFT].scanCode  = SCAN_NULL; 
     con->buttons[LEFT].unicode   = u'a';
     con->buttons[RIGHT].scanCode = SCAN_NULL; 
-    con->buttons[RIGHT].unicode  = u'f';
+    con->buttons[RIGHT].unicode  = u'd';
     con->buttons[QUIT].scanCode  = SCAN_ESC;
     con->buttons[QUIT].unicode   = 0;
     ClearController(con);
@@ -62,8 +62,8 @@ Init (
     cam->screen;
     GetScreen(&cam->screen);
 
-    This->x = 0;
-    This->y = 0;
+    This->x = FROM_TILE(1);
+    This->y = FROM_TILE(1);
     This->velX = 0;
     This->velY = 0;
     //This->flags - Will be set prior to displaying
@@ -93,7 +93,6 @@ CheckCollision (
 
     UINTN prevX = This->x - This->velX;
     UINTN prevY = This->y - This->velY;
-    
     //Are new X-coords colliding? (with old y)
     if (This->velX / LOCATION_PRECISION != 0) {
         if (
@@ -101,23 +100,17 @@ CheckCollision (
             LevelBuffer[TO_TILE(This->x + offset) + TO_TILE(prevY         ) * LevelWidth] != 0 ||
             LevelBuffer[TO_TILE(This->x         ) + TO_TILE(prevY + offset) * LevelWidth] != 0 ||
             LevelBuffer[TO_TILE(This->x + offset) + TO_TILE(prevY + offset) * LevelWidth] != 0 
-        ) 
+        )
         {
             const BOOLEAN positive = This->velX >= 0;
             
             i = TO_TILE(This->velX);
             positive ? i++ : i--;
-            while (1) {
-                if (LevelBuffer[(TO_TILE(prevX) + i) + TO_TILE(prevY) * LevelWidth] == 0) {
-                    This->x = FROM_TILE(TO_TILE(prevX) + i);
-                    break;
-                }
+            while (LevelBuffer[(TO_TILE(prevX) + i) + TO_TILE(prevY) * LevelWidth] != 0 && i != 0) {
                 //increment i towards 0
                 !positive ? i++ : i--;
             }
-
-            This->velX = positive ? 0 : -0;
-
+            This->x = FROM_TILE(TO_TILE(prevX) + i);
             colliding = TRUE;
         }
     }
@@ -134,15 +127,11 @@ CheckCollision (
             const BOOLEAN positive = This->velY >= 0;
             i = TO_TILE(This->velY);
             positive ? i++ : i--;
-            while (1) {
-                if (LevelBuffer[TO_TILE(prevX) + (TO_TILE(prevY) + i) * LevelWidth] == 0 || i == 0) {
-                    This->y = FROM_TILE(TO_TILE(prevY) + i);
-                    break;
-                }
+            while (LevelBuffer[TO_TILE(prevX) + (TO_TILE(prevY) + i) * LevelWidth] != 0 && i != 0) {
                 //increment i towards 0
                 !positive ? i++ : i--;
-                
             }
+            This->y = FROM_TILE(TO_TILE(prevY) + i);
             if (positive && This->flags.midair) { //Only colliding on bottom
                 This->flags.midair = 0;
             }
@@ -153,7 +142,7 @@ CheckCollision (
             This->flags.midair = 1;
         }
     }
-
+    
     if (colliding) {
         This->flags.colliding = 1;
     }
@@ -163,23 +152,13 @@ CheckCollision (
     return colliding;
 }
 
-VOID
-Tick (
+VOID RefreshController(
     IN Player *This
-)
+) 
 {
-    EFI_STATUS Status;
-    EFI_KEY_DATA KeyData;
     UINTN i;
-
-    /*
-    ##### ##### #####    ##### #   # ####  #   # #####
-    #     #       #        #   ##  # #   # #   #   #  
-    #  ## ####    #        #   # # # ####  #   #   #  
-    #   # #       #        #   #  ## #     #   #   #  
-    ##### #####   #      ##### #   # #      ###    #  
-    */
-    Status = Input->ReadKeyStrokeEx(Input, &KeyData);
+    EFI_KEY_DATA KeyData;
+    EFI_STATUS Status = Input->ReadKeyStrokeEx(Input, &KeyData);
     while (Status != EFI_NOT_READY && !EFI_ERROR(Status)) { 
         This->controller->shiftState = KeyData.KeyState.KeyShiftState;
 
@@ -200,40 +179,51 @@ Tick (
         }
         Status = Input->ReadKeyStrokeEx(Input, &KeyData);
     }
+}
 
-    /*
-    #   #  ###  #   # ####  #     #####    ##### #   # ####  #   # #####
-    #   # #   # ##  # #   # #     #          #   ##  # #   # #   #   #  
-    ##### ##### # # # #   # #     ####       #   # # # ####  #   #   #  
-    #   # #   # #  ## #   # #     #          #   #  ## #     #   #   #  
-    #   # #   # #   # ####  ##### #####    ##### #   # #      ###    #  
-    */
-    UINTN rate = LOCATION_PRECISION / 2;
+VOID
+Tick (
+    IN Player *This
+)
+{
+    RefreshController(This);
+    UINTN rate = LOCATION_PRECISION;
     
-    if (This->controller->buttons[UP].state) {
-        This->velY -= LOCATION_PRECISION;
+    if (This->controller->buttons[UP].state && !This->flags.midair) {
+        This->velY -= LOCATION_PRECISION * 8;
     }
     else if (This->controller->buttons[DOWN].state) {
         This->velY += rate;
     }
     else if (This->controller->buttons[LEFT].state) {
+        This->flags.facingRight = 0;
         This->velX -= rate;
     }
     else if (This->controller->buttons[RIGHT].state) {
+        This->flags.facingRight = 1;
         This->velX += rate;
     }
     else if (This->controller->buttons[QUIT].state) {
         IsRunning = FALSE;
     }
+
+    if (!This->controller->buttons[LEFT].state && !This->controller->buttons[RIGHT].state && This->velX != 0) {
+        This->velX += rate * -This->flags.facingRight;
+    }
     ClearController(This->controller);
 
     //Gravity
-    This->velY += LOCATION_PRECISION / 2;
+    This->velY += LOCATION_PRECISION;
+    //Max speed
+    if (This->velX > 32) {
+        This->velX = 32;
+    }
+    else if (This->velX < -32) {
+        This->velX = -32;
+    }
 
     //Get new sprite and location if moving
-    if (This->velX != 0 || This->velY != 0) {
-        UINT8 facingLeft = (UINT8)(This->velX < 0);
-        
+    if (This->velX/LOCATION_PRECISION != 0 || This->velY/LOCATION_PRECISION != 0) {
         CheckCollision(This);
 
         //Get sprite
@@ -242,7 +232,7 @@ Tick (
                       SpriteSheetHeight,
                       This->flags.midair ? JUMP_FRAME * SpriteLength //Get jump/midair sprite
                                          : ((This->x / (LOCATION_PRECISION * 8)) % JUMP_FRAME) * SpriteLength,
-                      facingLeft * SpriteLength, //Go down one tile (in the sprite sheet) if facing left
+                      (!This->flags.facingRight) * SpriteLength, //Go down one tile (in the sprite sheet) if facing left
                       &This->sprite,
                       SpriteLength,
                       SpriteLength

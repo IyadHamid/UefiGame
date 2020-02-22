@@ -9,12 +9,11 @@ The game loads a a sprite sheet that can easily be changed however the tile size
 ## Issues
 |Features|Status|
 |:-----------------------|-------|
-|Overall|Working (as intended)|
-|Physics (Collision/Gravity/Friction)|Minor bugs|
+|Overall|Working (except for collisions)|
+|Collisions|Broken (to an extent)|
 |Level creation|Minimal, undocumented|
 |Scrolling Camera|None|
-|Screen protocol selector|None|
-|Game.c is becoming sloppy|Cleaned|
+|Screen selector|None|
 |calling build from finish.bat is sketch|None|
 
 ## Changelog (Latest first)
