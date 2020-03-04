@@ -1,6 +1,6 @@
 # UefiGame
 Bare metal game using EDK2 by [Iyad H](https://github.com/IyadHamid).
-To build, clone [edk2](https://github.com/tianocore/edk2.git) and follow build instructions and change the target to GamePkg.dsc. Run using [finish](./finish.bat) after building OvmfPkg with Qemu. Or alternatively take the drive path constructed in [finish](./finish.bat) and place it in a USB (FAT32) and boot Game.efi.
+To build, clone [edk2](https://github.com/tianocore/edk2.git) and follow build instructions and change the target to GamePkg.dsc. Run using OvmfPkg with Qemu. Or alternatively take the drive path constructed in [finish](./finish.bat) and place it in a USB (FAT32) and boot Game.efi.
 
 The game loads a a sprite sheet that can easily be changed however the tile size is defined to be 8x8 in the [gamestate](.\globals\gamestate.h)
 
