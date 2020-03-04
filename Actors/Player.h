@@ -17,15 +17,18 @@ typedef struct {
 ///
 /// Controls with scancodes
 ///
-typedef struct {
+typedef struct Controller {
     Button buttons[MAX_BUTTONS];
     UINT32 shiftState;
+    
+    VOID (*clear)();
+    VOID (*refresh)();
 } Controller;
 
 ///
 /// Camera information
 ///
-typedef struct {
+typedef struct Camera {
     UINTN x;
     UINTN y;
     EFI_GRAPHICS_OUTPUT_PROTOCOL *screen;
@@ -34,16 +37,15 @@ typedef struct {
 ///
 /// Player flags
 ///
-typedef struct {
-    BOOLEAN colliding : 1;
+typedef struct PlayerFlags {
     BOOLEAN midair : 1;
     BOOLEAN facingRight : 1;
-} playerFlags;
+} PlayerFlags;
 
 ///
 /// Player information
 ///
-typedef struct {
+typedef struct Player {
     ///
     /// X coord
     ///
@@ -52,32 +54,43 @@ typedef struct {
     /// Y coord
     ///
     UINTN y;
+    ///
+    /// X velocity
+    ///
     INTN velX;
+    ///
+    /// Y velocity
+    ///
     INTN velY;
     ///
-    /// Colliding, Midair
+    /// X acceleration
     ///
-    playerFlags flags;
+    INTN accX;
+    ///
+    /// Y acceleration
+    ///
+    INTN accY;
+    ///
+    /// Midair, Facing Right
+    ///
+    PlayerFlags flags;
+    ///
+    /// Controller
+    ///
     Controller *controller;
+    ///
+    /// Camera
+    ///
     Camera *camera;
+    ///
+    /// Current sprite
+    ///
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL *sprite;
+
+    VOID (*collide)();
+    VOID (*tick)();
 } Player;
 
-VOID
-ClearController (
-    IN Controller *This
-);
-
-VOID RefreshController(
-    IN Player *This
-);
-
-VOID
-Init (
-    IN Player *This
-);
-
-VOID
-Tick(
-    IN Player *This
+VOID InitializePlayer (
+    IN Player *this
 );

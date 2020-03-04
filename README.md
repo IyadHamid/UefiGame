@@ -4,19 +4,21 @@ To build, clone [edk2](https://github.com/tianocore/edk2.git) and follow build i
 
 The game loads a a sprite sheet that can easily be changed however the tile size is defined to be 8x8 in the [gamestate](.\globals\gamestate.h)
 
-![.\sprites.bmp](.\Assets\sprites.bmp "Sprites")
+![sprites.bmp](.\Assets\sprites.bmp "Sprites")
+![tiles.bmp](.\Assets\tiles.bmp "Tiles")
 
 ## Issues
 |Features|Status|
 |:-----------------------|-------|
-|Overall|Working (except for collisions)|
-|Collisions|Broken (to an extent)|
+|Overall|Nonfunctional|
+|Collisions|Not implemented|
 |Level creation|Minimal, undocumented|
-|Scrolling Camera|None|
-|Screen selector|None|
-|calling build from finish.bat is sketch|None|
+|Camera Changes|None|
 
 ## Changelog (Latest first)
+### v0.1.0
+- Made player more similar to a class
+- Made 16-bit
 ### v0.0.0
 - Added Collisions w/ Gravity
 - Changed controller to be less "console-y"

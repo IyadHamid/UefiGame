@@ -17,6 +17,12 @@ EFI_GRAPHICS_OUTPUT_BLT_PIXEL *SpriteSheet;
 UINTN SpriteSheetSize;
 UINTN SpriteSheetHeight;
 UINTN SpriteSheetWidth;
+
+EFI_GRAPHICS_OUTPUT_BLT_PIXEL *TileSheet;
+UINTN TileSheetSize;
+UINTN TileSheetHeight;
+UINTN TileSheetWidth;
+
 UINTN SpriteLength;
 
 EFI_STATUS
@@ -196,8 +202,9 @@ InitBackground (
 	EFI_STATUS Status;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *PixelMap;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Tile;
+	UINTN MapSize;
 
-	Status = LoadBMP(L"EFI\\Game\\map.bmp", &PixelMap, &LevelHeight, &LevelWidth, &SpriteSheetSize); //Using SpriteSheetSize as temporary
+	Status = LoadBMP(L"EFI\\Game\\map.bmp", &PixelMap, &LevelHeight, &LevelWidth, &MapSize); 
 	if (EFI_ERROR(Status)) {
 	  goto Cleanup;
 	}
@@ -213,11 +220,11 @@ InitBackground (
 				if (Tile != NULL) {
 					FreePool(Tile);
 				}
-	    		ExtractBuffer(SpriteSheet, 
-	                    	  SpriteSheetWidth, 
-	                    	  SpriteSheetHeight, 
-	                    	  (PixelMap[i].Red - 1) * SpriteLength, 
-	                    	  2 * SpriteLength, 
+	    		ExtractBuffer(TileSheet, 
+	                    	  TileSheetWidth, 
+	                    	  TileSheetHeight, 
+	                    	  (PixelMap[i].Red) * SpriteLength, 
+	                    	  0, 
 	                    	  &Tile, 
 	                    	  SpriteLength, 
 	                    	  SpriteLength

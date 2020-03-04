@@ -19,7 +19,7 @@
 #include "Globals/GameState.h"
 #include "Globals/Graphics.h"
 
-#define SCALE 4
+#define SCALE 2
 #define T Print(L"%d", zxc); zxc++;
 
 BOOLEAN IsRunning;
@@ -69,23 +69,30 @@ UefiMain (
     ErrorPrint(L"Unable to find sprites.bmp\n");
     goto Cleanup;
   }
+  Status = LoadBMP(L"EFI\\Game\\tiles.bmp", &TileSheet, &TileSheetHeight, &TileSheetWidth, &TileSheetSize);
+  if (EFI_ERROR(Status)) {
+    ErrorPrint(L"Unable to find tiles.bmp\n");
+    goto Cleanup;
+  }
 
 	SpriteLength = BMP_TILE_LENGTH;
 
   //Scale sprites up
   ScaleBuffer(&SpriteSheet, &SpriteSheetWidth, &SpriteSheetHeight, SCALE);
+  ScaleBuffer(&TileSheet, &TileSheetWidth, &TileSheetHeight, SCALE);
   SpriteLength *= SCALE;
+  
   InitBackground();
   //Initialize Player
   Player *player;
   player = AllocatePool(sizeof(player));
-  Init(player);
+  InitializePlayer(player);
 
   //Setup tick loop
   EFI_EVENT TickEvent;
   UINTN eventId;
   gBS->CreateEvent(EVT_TIMER, 0, NULL, NULL, &TickEvent);
-	gBS->SetTimer(TickEvent, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(10));
+	gBS->SetTimer(TickEvent, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(500));
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
 
   IsRunning = TRUE;
@@ -95,9 +102,9 @@ UefiMain (
     DrawBuffer = AllocateCopyPool(LevelWidth * SpriteLength * LevelHeight * SpriteLength, BackgroundBuffer);
     //Wait for tick
     gBS->WaitForEvent(1, &TickEvent, &eventId);
-    Tick(player);
+    player->tick(player);
     ExtractBuffer(DrawBuffer, LevelWidth * SpriteLength, LevelHeight * SpriteLength, 0, 0, &temp, 512, 512);
-    
+  
     player->camera->screen->Blt(player->camera->screen, temp, EfiBltBufferToVideo, 0, 0, 0, 0, 512, 512, 0);
     //Free screen and temporary
     FreePool(temp);
