@@ -13,10 +13,18 @@
 #include "B:/UefiGame/Actors/Player.h"
 #include "B:/UefiGame/Globals/GameState.h"
 #include "B:/UefiGame/Globals/Graphics.h"
-
+//Coord->Pixel
 #define TO_PIXEL(A) ((A) / (INTN)(LOCATION_PRECISION))
+//Coord->Tile
 #define TO_TILE(A) ((A) / (INTN)(LOCATION_PRECISION * SpriteLength))
+//Tile->Coord
 #define FROM_TILE(A) ((A) * LOCATION_PRECISION * SpriteLength)
+//Pixel->Coord
+#define FROM_PIXEL(A) ((A) * LOCATION_PRECISION)
+//Pixel->Tile
+#define PIXEL_TO_TILE(A) ((A) / SpriteLength)
+//Tile->Pixel
+#define TILE_TO_PIXEL(A) ((A) * SpriteLength)
 
 EFI_INPUT_KEY last;
 
@@ -34,6 +42,87 @@ VOID Clear (
 VOID Collide (
     Player *this
 ) {
+    UINTN newX = this->x + this->velX;
+    UINTN newY = this->y + this->velY;
+    /* Sonic like detection (arrows are each ray)
+    http://info.sonicretro.org/SPG:Solid_Tiles#Sensors
+
+    .^....^.
+    .^....^.
+    .^....^.
+    .^....^.
+    <<<<>>>>
+    .v....v.
+    .v....v.
+    .v....v.
+    */
+    UINTN left = 0, right = 0, upLeft = 0, upRight = 0, downLeft = 0, downRight = 0;
+    for (UINTN i = 0; i <= (SpriteLength/2) / SCALE + 1; i++) {
+        if ( //Midpoint to left
+            this->velX < 0 &&
+            LevelBuffer[PIXEL_TO_TILE((TO_PIXEL(newX) + (SpriteLength / 2) - i * SCALE)) + 
+                        PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2)) * LevelWidth
+                        ] == 0
+        ) {
+            left = i;
+        }
+        else if ( //Midpoint to right
+            this->velX > 0 &&
+            LevelBuffer[PIXEL_TO_TILE((TO_PIXEL(newX) + (SpriteLength / 2 - SCALE) + i * SCALE)) + 
+                        PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2)) * LevelWidth
+                        ] == 0
+        ) {
+            right = i;
+        }
+
+        if (this->velY < 0) {
+            if ( //Left midpoint to up
+                LevelBuffer[
+                            PIXEL_TO_TILE(TO_PIXEL(newX) + (1 * SpriteLength / 4)) +
+                            PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2) - i * SCALE) * LevelWidth
+                            ] == 0
+            ) {
+                upLeft = i;
+            }
+            if ( //Right midpoint to up
+                LevelBuffer[
+                            PIXEL_TO_TILE(TO_PIXEL(newX) + (3 * SpriteLength / 4)) +
+                            PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2) - i * SCALE) * LevelWidth
+                            ] == 0
+            ) {
+                upRight = i;
+            }
+        }
+        else if (this->velY > 0) {
+            if ( //Left midpoint to down
+                LevelBuffer[
+                            PIXEL_TO_TILE(TO_PIXEL(newX) + (1 * SpriteLength / 4)) +
+                            PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2) + i * SCALE - SCALE) * LevelWidth
+                            ] == 0
+            ) {
+                downLeft = i;
+            }
+            if ( //Right midpoint to down
+                LevelBuffer[
+                            PIXEL_TO_TILE(TO_PIXEL(newX) + (3 * SpriteLength / 4)) +
+                            PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2) + i * SCALE - SCALE) * LevelWidth
+                            ] == 0
+            ) {
+                downRight = i;
+            }
+        }
+    }
+    
+    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 0);
+    Print(L"%d, %d \t", upLeft, upRight);
+    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 1);
+    Print(L"%d, %d \t", left, right);
+    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 2);
+    Print(L"%d, %d \t", downLeft, downRight);
+
+    
+    this->x=newX; 
+    this->y=newY;
     //Change velocity
     //Check collisions
     //Set flags
@@ -72,40 +161,40 @@ VOID Tick (
     IN Player *this
 ) {
     this->controller->refresh(this->controller);
-    UINTN rate = LOCATION_PRECISION;
     
+    this->accX = this->accY = 0;
+    this->flags.midair = 0; //DEBUG/////////////////////////
     if (this->controller->buttons[UP].state && !this->flags.midair) {
-        this->velY -= LOCATION_PRECISION * 10;
+        this->accY -= FROM_PIXEL(2);
     }
     else if (this->controller->buttons[DOWN].state) {
-        this->velY += rate;
+        this->accY += FROM_PIXEL(2);
     }
     else if (this->controller->buttons[LEFT].state) {
         this->flags.facingRight = 0;
-        this->velX -= rate;
+        this->accX -= FROM_PIXEL(2);
     }
     else if (this->controller->buttons[RIGHT].state) {
         this->flags.facingRight = 1;
-        this->velX += rate;
+        this->accX += FROM_PIXEL(2);
     }
     else if (this->controller->buttons[QUIT].state) {
         IsRunning = FALSE;
     }
 
-    if (!this->controller->buttons[LEFT].state && !this->controller->buttons[RIGHT].state && this->velX != 0) {
-        this->velX += rate * -this->flags.facingRight;
-    }
     this->controller->clear(this->controller);
 
     //Gravity
-    this->velY += LOCATION_PRECISION;
+    //this->accY += FROM_PIXEL(1);
     //Max speed
-    if (this->velX > 32) {
-        this->velX = 32;
-    }
-    else if (this->velX < -32) {
-        this->velX = -32;
-    }
+    this->velX += this->accX;
+    this->velY += this->accY;
+    //if (this->velX > 32) {
+    //    this->velX = 32;
+    //}
+    //else if (this->velX < -32) {
+    //    this->velX = -32;
+    //}
 
     //Get new sprite and location if moving
     if (this->velX/LOCATION_PRECISION != 0 || this->velY/LOCATION_PRECISION != 0) {

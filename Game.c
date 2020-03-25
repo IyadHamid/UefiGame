@@ -19,7 +19,6 @@
 #include "Globals/GameState.h"
 #include "Globals/Graphics.h"
 
-#define SCALE 2
 #define T Print(L"%d", zxc); zxc++;
 
 BOOLEAN IsRunning;
@@ -92,7 +91,7 @@ UefiMain (
   EFI_EVENT TickEvent;
   UINTN eventId;
   gBS->CreateEvent(EVT_TIMER, 0, NULL, NULL, &TickEvent);
-	gBS->SetTimer(TickEvent, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(500));
+	gBS->SetTimer(TickEvent, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(5));
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
 
   IsRunning = TRUE;

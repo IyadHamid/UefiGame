@@ -5,6 +5,7 @@
 #define LOCATION_PRECISION 8
 #define BMP_TILE_LENGTH 16
 #define JUMP_FRAME 3
+#define SCALE 2
 
 extern EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *Input;
 
