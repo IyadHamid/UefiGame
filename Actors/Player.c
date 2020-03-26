@@ -42,6 +42,7 @@ VOID Clear (
 VOID Collide (
     Player *this
 ) {
+    
     UINTN newX = this->x + this->velX;
     UINTN newY = this->y + this->velY;
     /* Sonic like detection (arrows are each ray)
@@ -56,20 +57,30 @@ VOID Collide (
     .v....v.
     .v....v.
     */
-    UINTN left = 0, right = 0, upLeft = 0, upRight = 0, downLeft = 0, downRight = 0;
-    for (UINTN i = 0; i <= (SpriteLength/2) / SCALE + 1; i++) {
+    
+    const UINTN halfLength = SpriteLength / 2;
+    const UINTN halfScaled = halfLength / SCALE;
+    const INTN midX = TO_PIXEL(newX) + halfLength;
+    const INTN midY = TO_PIXEL(newY) + halfLength;
+    const INTN leftX = TO_PIXEL(newX) + (1 * SpriteLength / 8);
+    const INTN rightX = TO_PIXEL(newX) + (7 * SpriteLength / 8);
+
+    UINTN left, right, upLeft, upRight, downLeft, downRight;
+    left = right = upLeft = upRight = downLeft = downRight = halfScaled + 1;
+
+    for (UINTN i = 0; i <= halfLength / SCALE + 1; i++) {
         if ( //Midpoint to left
             this->velX < 0 &&
-            LevelBuffer[PIXEL_TO_TILE((TO_PIXEL(newX) + (SpriteLength / 2) - i * SCALE)) + 
-                        PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2)) * LevelWidth
+            LevelBuffer[PIXEL_TO_TILE((midX - i * SCALE)) + 
+                        PIXEL_TO_TILE(midY) * LevelWidth
                         ] == 0
         ) {
             left = i;
         }
         else if ( //Midpoint to right
             this->velX > 0 &&
-            LevelBuffer[PIXEL_TO_TILE((TO_PIXEL(newX) + (SpriteLength / 2 - SCALE) + i * SCALE)) + 
-                        PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2)) * LevelWidth
+            LevelBuffer[PIXEL_TO_TILE(midX + (i - 1) * SCALE) + 
+                        PIXEL_TO_TILE(midY) * LevelWidth
                         ] == 0
         ) {
             right = i;
@@ -78,49 +89,84 @@ VOID Collide (
         if (this->velY < 0) {
             if ( //Left midpoint to up
                 LevelBuffer[
-                            PIXEL_TO_TILE(TO_PIXEL(newX) + (1 * SpriteLength / 4)) +
-                            PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2) - i * SCALE) * LevelWidth
+                            PIXEL_TO_TILE(leftX) +
+                            PIXEL_TO_TILE(midY - i * SCALE) * LevelWidth
                             ] == 0
             ) {
                 upLeft = i;
             }
             if ( //Right midpoint to up
                 LevelBuffer[
-                            PIXEL_TO_TILE(TO_PIXEL(newX) + (3 * SpriteLength / 4)) +
-                            PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2) - i * SCALE) * LevelWidth
+                            PIXEL_TO_TILE(rightX) +
+                            PIXEL_TO_TILE(midY - i * SCALE) * LevelWidth
                             ] == 0
             ) {
                 upRight = i;
             }
         }
-        else if (this->velY > 0) {
+        else if (this->velY >= 0) { //Need to check for ledges (<=)
             if ( //Left midpoint to down
                 LevelBuffer[
-                            PIXEL_TO_TILE(TO_PIXEL(newX) + (1 * SpriteLength / 4)) +
-                            PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2) + i * SCALE - SCALE) * LevelWidth
+                            PIXEL_TO_TILE(leftX) +
+                            PIXEL_TO_TILE(midY + (i - 1) * SCALE) * LevelWidth
                             ] == 0
             ) {
                 downLeft = i;
             }
             if ( //Right midpoint to down
                 LevelBuffer[
-                            PIXEL_TO_TILE(TO_PIXEL(newX) + (3 * SpriteLength / 4)) +
-                            PIXEL_TO_TILE(TO_PIXEL(newY) + (SpriteLength / 2) + i * SCALE - SCALE) * LevelWidth
+                            PIXEL_TO_TILE(rightX) +
+                            PIXEL_TO_TILE(midY + (i - 1) * SCALE) * LevelWidth
                             ] == 0
             ) {
                 downRight = i;
             }
         }
-    }
-    
-    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 0);
-    Print(L"%d, %d \t", upLeft, upRight);
-    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 1);
-    Print(L"%d, %d \t", left, right);
-    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 2);
-    Print(L"%d, %d \t", downLeft, downRight);
 
-    
+    }
+    //DEBUG/////////////
+    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 0);
+    Print(L"%d, %d   \t", upLeft, upRight);
+    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 1);
+    Print(L"%d, %d   \t", left, right);
+    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 2);
+    Print(L"%d, %d   \t", downLeft, downRight);
+    gST->ConOut->SetCursorPosition(gST->ConOut, 65, 3);
+    Print(L"%d, %d   \t", this->velX != 0, this->velY != 0);
+
+    if (left <= halfScaled) {
+        newX += FROM_PIXEL(halfLength - left * SCALE);
+        this->velX = 0;
+    }
+    else if (right <= halfScaled) {
+        newX -= FROM_PIXEL(halfLength - right * SCALE);
+        this->velX = 0;    
+    }
+
+    if (downLeft <= halfScaled || downRight <= halfScaled) {
+        if (downLeft > downRight) {
+            newY -= FROM_PIXEL(halfLength - downLeft * SCALE);
+        }
+        else {
+            newY -= FROM_PIXEL(halfLength - downRight * SCALE);
+        }
+        this->velY = 0;
+        this->flags.midair = 0;
+    }
+    else {
+        this->flags.midair = 1;
+    }
+
+    if (upLeft <= halfScaled || upRight <= halfScaled) {
+        if (upLeft > upRight) {
+            newY += FROM_PIXEL(halfLength - upLeft * SCALE);
+        }
+        else {
+            newY += FROM_PIXEL(halfLength - upRight * SCALE);
+        }
+        this->velY = 0;
+    }
+
     this->x=newX; 
     this->y=newY;
     //Change velocity
@@ -161,11 +207,11 @@ VOID Tick (
     IN Player *this
 ) {
     this->controller->refresh(this->controller);
-    
+
+    //INTN acc = 0;
     this->accX = this->accY = 0;
-    this->flags.midair = 0; //DEBUG/////////////////////////
     if (this->controller->buttons[UP].state && !this->flags.midair) {
-        this->accY -= FROM_PIXEL(2);
+        this->accY -= FROM_PIXEL(10);
     }
     else if (this->controller->buttons[DOWN].state) {
         this->accY += FROM_PIXEL(2);
@@ -173,10 +219,12 @@ VOID Tick (
     else if (this->controller->buttons[LEFT].state) {
         this->flags.facingRight = 0;
         this->accX -= FROM_PIXEL(2);
+        //acc -= FROM_PIXEL(2);
     }
     else if (this->controller->buttons[RIGHT].state) {
         this->flags.facingRight = 1;
         this->accX += FROM_PIXEL(2);
+        //acc += FROM_PIXEL(2);
     }
     else if (this->controller->buttons[QUIT].state) {
         IsRunning = FALSE;
@@ -184,11 +232,13 @@ VOID Tick (
 
     this->controller->clear(this->controller);
 
+    this->velX += this->accX ;//+ acc;
+    this->velY += this->accY;
+
+
     //Gravity
     //this->accY += FROM_PIXEL(1);
     //Max speed
-    this->velX += this->accX;
-    this->velY += this->accY;
     //if (this->velX > 32) {
     //    this->velX = 32;
     //}
@@ -199,7 +249,6 @@ VOID Tick (
     //Get new sprite and location if moving
     if (this->velX/LOCATION_PRECISION != 0 || this->velY/LOCATION_PRECISION != 0) {
         this->collide(this);
-
         //Get sprite
         ExtractBuffer(SpriteSheet,
                       SpriteSheetWidth,

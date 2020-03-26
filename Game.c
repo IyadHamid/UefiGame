@@ -93,7 +93,7 @@ UefiMain (
   gBS->CreateEvent(EVT_TIMER, 0, NULL, NULL, &TickEvent);
 	gBS->SetTimer(TickEvent, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(5));
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *temp;
-
+  Print(L"Test");
   IsRunning = TRUE;
   while (IsRunning) {
   
